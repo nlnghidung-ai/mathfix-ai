@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>MATHFIX AI — Phân tích bài làm</title>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="learning-path.css">
+</head>
+<body class="dashboard">
+  <nav class="nav wrap"><a class="brand" href="index.html"><b>✦</b> MATHFIX <span>AI</span></a><span class="workspace">✨ Không gian học tập</span></nav>
+  <main class="wrap learning-page">
+    <header class="dash-head"><p class="eyebrow">PHÒNG HỌC CỦA BẠN</p><h1>Hôm nay mình học gì nhỉ?</h1><p>Tải bài làm để AI giúp bạn phát hiện điểm cần ôn nhé.</p></header>
+    <div class="old-layout">
+      <section id="uploadPanel" class="upload-panel old-upload">
+        <div class="upload-title"><span>🖼️</span><h2>Tải bài làm của bạn lên</h2><p>Ảnh rõ nét sẽ giúp AI phân tích chính xác hơn</p></div>
+        <div class="input-tabs"><button class="tab active" data-tab="upload">Tải ảnh lên</button><button class="tab" data-tab="camera">Mở camera</button></div>
+        <div id="uploadMode"><label class="drop-zone old-drop" for="imageInput"><input id="imageInput" type="file" accept="image/png,image/jpeg" hidden><div id="emptyDrop"><b>🖼️</b><h3>Kéo ảnh bài làm vào đây</h3><p>hoặc <strong>chọn ảnh từ thiết bị</strong></p><small>Hỗ trợ JPG, PNG · Tối đa 10 MB</small></div><img id="preview" class="hidden" alt="Xem trước bài làm"></label></div>
+        <div id="cameraMode" class="hidden camera-box"><video id="cameraPreview" autoplay playsinline></video><canvas id="cameraCanvas" class="hidden"></canvas><p id="cameraMessage">Cho phép camera để chụp bài làm.</p><button id="captureBtn" class="ghost">📸 Chụp ảnh</button></div>
+        <div class="practice-plan"><b>📚 Bộ luyện tập tự động</b><span>8 câu cơ bản + 2 câu nâng cao, tạo từ lỗi AI vừa phát hiện.</span></div>
+        <p id="uploadError" class="error-text hidden"></p><button id="analyzeBtn" class="btn" disabled>✨ Phân tích bài làm</button>
+        <p class="note">AI đọc ảnh bài làm và tạo lộ trình ôn tập riêng cho bạn.</p>
+        <p class="ai-disclaimer" role="note">MathFix có thể đưa ra kết quả chưa hoàn toàn chính xác. Hãy kiểm tra và đối chiếu với đáp án hoặc hướng dẫn của giáo viên.</p>
+      </section>
+      <aside class="tip-panel"><div class="robot">🤖</div><h2>Mẹo nhỏ để AI đọc rõ hơn</h2><p>💡 Chụp ở nơi có đủ ánh sáng</p><p>📄 Đặt bài làm phẳng, không bị che</p><p>✍️ Viết chữ to và rõ nét nhé</p></aside>
+    </div>
+    <section id="loadingPanel" class="loading-panel hidden"><div class="loader"></div><h2 id="loadingText">Đang đọc bài làm…</h2><p>Đang tìm lỗi và tạo lộ trình học riêng.</p></section>
+    <section id="resultPanel" class="hidden">
+      <div class="result-layout">
+        <div><div class="section-title"><div><p class="eyebrow">LEARNING ERROR</p><h2>Chỗ mình cần xem lại</h2></div><span id="topicLabel"></span></div><div id="problemNavigator"></div><div id="errorList"></div><article class="source-card"><p class="eyebrow">BÀI LÀM ĐÃ PHÂN TÍCH</p><img id="resultImage" alt="Bài làm đã tải"></article></div>
+        <aside class="path-box"><p class="eyebrow">LEARNING PATH</p><h2>Lộ trình dành cho bạn</h2><p id="recommendation"></p><div class="path-progress"><i class="active"></i><i></i><i></i></div><div id="pathSteps"></div></aside>
+      </div>
+    </section>
+  </main>
+  <script>window.LEARNING_DEMO_MODE = new URLSearchParams(location.search).has('demo');</script>
+  <script src="domain.js"></script><script src="mock-analysis-service.js"></script><script src="vision-analysis.js"></script><script src="learning-path.js"></script>
+</body>
+</html>
