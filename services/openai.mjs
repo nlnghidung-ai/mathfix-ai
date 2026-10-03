@@ -39,7 +39,7 @@ async function requestAI(input) {
   const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: process.env.OPENAI_MODEL || 'gpt-5', store: false, input })
+    body: JSON.stringify({ model: process.env.OPENAI_MODEL || 'gpt-4.1-mini', store: false, input })
   });
   if (!response.ok) {
     if (response.status === 401) throw new Error('API key không hợp lệ hoặc đã bị thu hồi.');
