@@ -3,8 +3,9 @@ window.HomeworkAnalysisService = {
   async analyze(image) {
     if (location.protocol === 'file:') throw new Error('Hãy mở trang bằng http://localhost:3000/dashboard.html để AI có thể phân tích ảnh.');
     let response;
-    try { response = await fetch('/.netlify/functions/analyze', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({image}) }); }
-    catch { throw new Error('Chưa kết nối được máy chủ AI. Hãy kiểm tra PowerShell vẫn đang hiện “LearnPath AI: http://localhost:3000”.'); }
+    const endpoint = location.hostname === 'localhost' ? '/api/analyze' : '/.netlify/functions/analyze';
+    try { response = await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({image}) }); }
+    catch { throw new Error('Chưa kết nối được máy chủ AI. Hãy kiểm tra PowerShell vẫn đang mở.'); }
     const raw = await response.json();
     const analyses = raw.analyses || (raw.errors?.length ? [raw] : []);
     if (!response.ok || !raw.readable || raw.needsRetake || !analyses.length) throw new Error(raw.message || 'AI chưa đọc đủ rõ để kết luận lỗi. Hãy chụp rõ phần đề và bài làm.');
@@ -29,7 +30,8 @@ window.HomeworkAnalysisService = {
   },
   async reviewPractice(data) {
     let response;
-    try { response = await fetch('/.netlify/functions/review-practice', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) }); }
+    const endpoint = location.hostname === 'localhost' ? '/api/review-practice' : '/.netlify/functions/review-practice';
+    try { response = await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) }); }
     catch { throw new Error('Chưa kết nối được máy chủ AI. Hãy kiểm tra PowerShell vẫn đang mở.'); }
     const raw = await response.json();
     if (!response.ok) throw new Error(raw.message || 'AI chưa thể tổng hợp nhận xét.');
