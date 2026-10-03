@@ -13,9 +13,18 @@ summary tối đa 2 câu. Tạo studyPlanner bám sát lỗi sai: today, tomorro
 Trả duy nhất JSON: {"summary":"","mistakes":[{"steps":["Bước 1: ...","Bước 2: ..."]}],"studyPlanner":{"today":"","tomorrow":"","review":""}}. Số mistakes phải bằng số attempts sai.`;
 
 function extractText(body) {
-  const raw = JSON.stringify(body.output || []);
-  const parts = [...raw.matchAll(/"text":"((?:\\\\.|[^"\\\\])*)"/g)].map(match => JSON.parse('"' + match[1] + '"'));
-  return body.output_text || parts.join('');
+  if (body.status === 'incomplete') throw new Error('AI chưa hoàn tất phản hồi. Hãy thử lại với ảnh chỉ chứa một bài.');
+  if (body.error) throw new Error('Dịch vụ AI không hoàn tất yêu cầu. Hãy thử lại.');
+  if (typeof body.output_text === 'string' && body.output_text.trim()) return body.output_text;
+  const parts = [];
+  for (const item of body.output || []) {
+    for (const content of item.content || []) {
+      if (content.type === 'refusal') throw new Error('AI từ chối xử lý nội dung này. Hãy thử ảnh bài Toán khác.');
+      if (content.type === 'output_text' && typeof content.text === 'string') parts.push(content.text);
+    }
+  }
+  if (!parts.length) throw new Error('AI trả về phản hồi không có nội dung văn bản. Hãy thử lại.');
+  return parts.join('');
 }
 
 function parseJson(text) {
