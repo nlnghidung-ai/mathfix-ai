@@ -6,17 +6,6 @@ window.HomeworkAnalysisService = {
     const endpoint = location.hostname === 'localhost' ? '/api/analyze' : '/.netlify/functions/analyze';
     try { response = await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({image}) }); }
     catch { throw new Error('Chưa kết nối được máy chủ AI.'); }
-        // Đọc text an toàn trước khi parse JSON (tránh crash khi gặp trang lỗi HTML của Netlify)
-    const textData = await response.text();
-    let raw;
-    try {
-      raw = JSON.parse(textData);
-    } catch (e) {
-      if (response.status === 504 || textData.includes('504 Gateway')) {
-        throw new Error('AI xử lý quá thời gian cho phép của Netlify (Timeout). Hãy thử dùng gpt-5-mini hoặc chụp góc gần hơn.');
-      }
-      throw new Error(`Máy chủ phản hồi không đúng định dạng (Mã lỗi ${response.status}).`);
-    }
     const raw = await response.json();
     const analyses = raw.analyses || (raw.errors?.length ? [raw] : []);
     if (!response.ok || !raw.readable || raw.needsRetake || !analyses.length) throw new Error(raw.message || 'AI chưa đọc đủ rõ để kết luận lỗi. Hãy chụp rõ phần đề và bài làm.');
