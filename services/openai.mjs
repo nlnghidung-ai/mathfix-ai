@@ -49,15 +49,30 @@ function parseJson(text) {
 async function requestAI(input) {
   const key = process.env.OPENAI_API_KEY;
   if (!key) throw new Error('Chưa cấu hình OPENAI_API_KEY trên Netlify.');
+  
+  const model = process.env.OPENAI_MODEL || 'gpt-5-mini';
+  
+  const payload = {
+    model: model,
+    store: false,
+    input: input
+  };
+
+  // Nếu dùng dòng GPT-5, hạ mức độ suy luận xuống để phản hồi trong 5-8 giây, tránh timeout Netlify
+  if (model.includes('gpt-5') && !model.includes('nano')) {
+    payload.reasoning = { effort: 'minimal' }; // hoặc 'low'
+  }
+
   const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: process.env.OPENAI_MODEL || 'gpt-5-mini', store: false, input })
+    body: JSON.stringify(payload)
   });
+
   if (!response.ok) {
     if (response.status === 401) throw new Error('API key không hợp lệ hoặc đã bị thu hồi.');
     if (response.status === 429) throw new Error('Tài khoản API chưa có credits hoặc đã chạm giới hạn sử dụng.');
-    throw new Error(`Dịch vụ AI trả về lỗi ${response.status}.`);
+    throw new Error(`Dịch vụ AI trả về mã lỗi: ${response.status}.`);
   }
   return parseJson(extractText(await response.json()));
 }
