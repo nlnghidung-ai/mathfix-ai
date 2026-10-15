@@ -1,5 +1,6 @@
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 let imageUrl='',originalImageUrl='',cropper=null,cameraStream=null,currentResult=null,currentAnalysis=null,correctCount=0,practiceAttempts=[];
+let currentTranscribed=null;
 
 function initCropper(src){
   if(cropper){ cropper.destroy(); cropper = null; }
@@ -89,6 +90,7 @@ $('#captureBtn').onclick=()=>{
   $('#cameraMode').classList.add('hidden');
 };
 
+// BƯỚC 1: BẤM NÚT ĐỌC NỘI DUNG BÀI TOÁN
 $('#analyzeBtn').onclick=async()=>{
   if(cropper){
     const canvas = cropper.getCroppedCanvas({ maxWidth: 2048, maxHeight: 2048 });
@@ -97,40 +99,93 @@ $('#analyzeBtn').onclick=async()=>{
   if(!imageUrl)return;
   
   $('.old-layout').classList.add('hidden');
+  $('#confirmPanel').classList.add('hidden');
   $('#loadingPanel').classList.remove('hidden');
-  const demo=window.LEARNING_DEMO_MODE===true;
-  const messages=demo?['Đang đọc nội dung bài làm…','Đang xác định kiến thức và lỗi sai…']:['Đang gửi ảnh đến AI…','AI đang đọc toàn bộ bài trong ảnh…','AI đang kiểm tra phép tính và tìm lỗi…'];
-  let i=0;
-  $('#loadingText').textContent=messages[i];
-  const timer=setInterval(()=>{$('#loadingText').textContent=messages[Math.min(++i,messages.length-1)]},1200);
-  try{
-    if(demo){
-      setTimeout(()=>{
-        clearInterval(timer);
-        showResult({analysisSets:[MockAnalysisService.analyze(imageUrl)],sourceImage:imageUrl});
-      },2100);
-      return;
-    }
-    // Giai đoạn 1: Chỉ đọc ảnh & tìm lỗi (rất nhanh, không bị timeout)
-    const result=await HomeworkAnalysisService.analyze(imageUrl);
-    clearInterval(timer);
-    showResult(result);
-    // Giai đoạn 2: Gọi ngầm tạo 10 bài luyện tập
-    loadPracticeInBackground(result);
-  }catch(error){
-    clearInterval(timer);
+  $('#loadingText').textContent = 'Đang đọc bài toán trong ảnh…';
+  $('#loadingSubtext').textContent = 'AI đang nhận diện đề bài và các bước giải.';
+
+  try {
+    const scanRes = await HomeworkAnalysisService.scan(imageUrl);
+    currentTranscribed = scanRes;
+    
+    $('#scannedProblem').textContent = scanRes.problemText || 'Không phát hiện rõ nội dung đề bài.';
+    $('#scannedStudentWork').textContent = scanRes.studentWorkText || 'Không phát hiện rõ nội dung bài làm.';
+    
+    $('#loadingPanel').classList.add('hidden');
+    $('#confirmPanel').classList.remove('hidden');
+  } catch(error) {
     $('#loadingPanel').classList.add('hidden');
     $('.old-layout').classList.remove('hidden');
-    showInputError(error.message||'Không thể phân tích bài làm.');
+    showInputError(error.message || 'Không thể đọc nội dung bài làm.');
+  }
+};
+
+// BƯỚC 2A: NGƯỜI DÙNG BẤM "CHỤP LẠI"
+$('#btnRetakeCamera').onclick=async()=>{
+  $('#confirmPanel').classList.add('hidden');
+  $('.old-layout').classList.remove('hidden');
+  
+  $$('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab==='camera'));
+  $('#uploadMode').classList.add('hidden');
+  $('#cameraMode').classList.remove('hidden');
+  try{
+    cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    $('#cameraPreview').srcObject=cameraStream;
+    $('#cameraMessage').textContent='Canh bài làm vào khung rồi nhấn Chụp ảnh.';
+  }catch{
+    $('#cameraMessage').textContent='Không thể mở camera. Bạn có thể chuyển sang Tải ảnh lên.';
+  }
+};
+
+// BƯỚC 2B: NGƯỜI DÙNG BẤM "TẢI LẠI ẢNH"
+$('#btnReupload').onclick=()=>{
+  if(cropper){ cropper.destroy(); cropper = null; }
+  imageUrl='';
+  originalImageUrl='';
+  $('#imageInput').value = '';
+  $('#previewContainer').classList.add('hidden');
+  $('#emptyDropLabel').classList.remove('hidden');
+  $('#analyzeBtn').disabled = true;
+
+  $$('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab==='upload'));
+  $('#uploadMode').classList.remove('hidden');
+  $('#cameraMode').classList.add('hidden');
+  if(cameraStream){
+    cameraStream.getTracks().forEach(track=>track.stop());
+    cameraStream=null;
+  }
+
+  $('#confirmPanel').classList.add('hidden');
+  $('.old-layout').classList.remove('hidden');
+};
+
+// BƯỚC 2C: NGƯỜI DÙNG XÁC NHẬN "TIẾP TỤC PHÂN TÍCH"
+$('#btnProceedAnalyze').onclick=async()=>{
+  $('#confirmPanel').classList.add('hidden');
+  $('#loadingPanel').classList.remove('hidden');
+  $('#loadingText').textContent = 'Đang phân tích bài toán…';
+  $('#loadingSubtext').textContent = 'AI đang kiểm tra các phép tính và tìm lỗi sai.';
+
+  try {
+    const result = await HomeworkAnalysisService.analyze(imageUrl, currentTranscribed);
+    $('#loadingPanel').classList.add('hidden');
+    showResult(result);
+    loadPracticeInBackground(result);
+  } catch(error) {
+    $('#loadingPanel').classList.add('hidden');
+    $('#confirmPanel').classList.remove('hidden');
+    alert(error.message || 'Có lỗi xảy ra khi phân tích bài làm.');
   }
 };
 
 async function loadPracticeInBackground(result){
+  const defaultLevels = ['Dễ hơn', 'Tương đương', 'Tương đương', 'Nâng cao'];
   for(let item of result.analysisSets){
     const res = await HomeworkAnalysisService.generateExercises(item.knowledgePoint.name, item.learningErrors);
-    const levels=[...Array(8).fill('Cơ bản'),...Array(2).fill('Nâng cao')];
-    item.generatedExercises = (res.exercises || []).slice(0, 10).map((ex, idx)=>({
-      level: levels[idx] || 'Cơ bản', question: ex.question, answer: String(ex.answer)
+    item.generatedExercises = (res.exercises || []).slice(0, 4).map((ex, idx)=>({
+      level: ex.level || defaultLevels[idx] || 'Tương đương',
+      question: ex.question,
+      answer: String(ex.answer)
     }));
     if(currentAnalysis && currentAnalysis.title === item.title){
       const container = $('#practiceBox');
@@ -160,8 +215,69 @@ function showAnalysis(index){
   const sets=currentResult.analysisSets;
   $('#problemNavigator').innerHTML=sets.length>1?`<div class="problem-nav"><span class="problem-nav-label">Ảnh có ${sets.length} bài cần xem lại. Chọn một bài:</span>${sets.map((item,itemIndex)=>`<button class="problem-tab ${itemIndex===index?'active':''}" data-analysis="${itemIndex}">${item.title||`Bài ${itemIndex+1}`}</button>`).join('')}</div>`:'';
   $$('.problem-tab').forEach(button=>button.onclick=()=>showAnalysis(Number(button.dataset.analysis)));
-  $('#errorList').innerHTML=r.learningErrors.map(e=>`<article class="error-card"><span class="severity">Cần ôn lại</span><h3>${e.title}</h3><div class="work-compare"><div><small>BẠN ĐÃ LÀM</small><b>${e.studentWork}</b></div><div><small>CÁCH ĐÚNG</small><b>${e.correction}</b></div></div><p><b>Vị trí:</b> ${e.position}. ${e.explanation}</p><div class="tip">💡 ${e.tip}</div></article>`).join('');
+  
+  // HIỂN THỊ CÁC THẺ LỖI KÈM NÚT "AI CHỈ SAI RỒI"
+  $('#errorList').innerHTML=r.learningErrors.map((e, errIdx)=>`
+    <article class="error-card" id="error-card-${errIdx}">
+      <span class="severity">Cần ôn lại</span>
+      <h3>${e.title}</h3>
+      <div class="work-compare">
+        <div><small>BẠN ĐÃ LÀM</small><b>${e.studentWork}</b></div>
+        <div><small>CÁCH ĐÚNG</small><b>${e.correction}</b></div>
+      </div>
+      <p><b>Vị trí:</b> ${e.position}. ${e.explanation}</p>
+      <div class="tip">💡 ${e.tip}</div>
+      <div class="recheck-box">
+        <button class="btn-recheck-step" data-index="${errIdx}" type="button">🤔 AI chỉ sai rồi (Kiểm tra lại)</button>
+        <div class="recheck-feedback hidden" id="recheck-feedback-${errIdx}"></div>
+      </div>
+    </article>
+  `).join('');
+  
+  bindRecheckEvents();
   renderPath(r);
+}
+
+// BƯỚC XỬ LÝ SỰ KIỆN: KHI HỌC SINH BẤM "AI CHỈ SAI RỒI"
+function bindRecheckEvents(){
+  $$('.btn-recheck-step').forEach(btn => {
+    btn.onclick = async () => {
+      const idx = Number(btn.dataset.index);
+      const stepError = currentAnalysis.learningErrors[idx];
+      const card = $(`#error-card-${idx}`);
+      const feedback = $(`#recheck-feedback-${idx}`);
+      
+      btn.disabled = true;
+      btn.textContent = '⏳ AI đang suy nghĩ và tính lại…';
+
+      try {
+        const res = await HomeworkAnalysisService.recheckStep({
+          problemText: currentTranscribed?.problemText || '',
+          stepError: stepError
+        });
+
+        feedback.classList.remove('hidden');
+
+        if (res.isStudentCorrect) {
+          // AI thừa nhận bắt lỗi sai oan
+          card.classList.add('acknowledged-correct');
+          card.querySelector('.severity').textContent = '✓ Bạn làm đúng';
+          btn.textContent = '✓ AI đã xác nhận bạn làm đúng';
+          feedback.className = 'recheck-feedback correct';
+          feedback.innerHTML = `<strong>🎉 ${res.verdictTitle}:</strong> ${res.explanation}`;
+        } else {
+          // AI khẳng định bước này thực sự có lỗi sai
+          btn.textContent = 'Đã kiểm tra lại';
+          feedback.className = 'recheck-feedback wrong';
+          feedback.innerHTML = `<strong>⚠️ ${res.verdictTitle}:</strong> ${res.explanation}`;
+        }
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = '🤔 AI chỉ sai rồi (Kiểm tra lại)';
+        alert('Không thể thẩm định lại bước này. Vui lòng thử lại.');
+      }
+    };
+  });
 }
 
 function renderPath(r){
@@ -170,7 +286,7 @@ function renderPath(r){
     <h3>${s.title}</h3>
     <p>${s.goal}</p>
     ${i===0?`<a class="resource" target="_blank" rel="noopener" href="${r.learningResources[0].url}">▶ ${r.learningResources[0].title}</a><button class="btn next-step">Đã học lý thuyết →</button>`:''}
-    ${i===1?`<div id="practiceBox">${r.generatedExercises?.length ? practiceMarkup(r.generatedExercises) : '<div class="ai-created">✨ AI đang tạo 10 bài luyện tập phù hợp từ lỗi của bạn...</div>'}</div>`:''}
+    ${i===1?`<div id="practiceBox">${r.generatedExercises?.length ? practiceMarkup(r.generatedExercises) : '<div class="ai-created">✨ AI đang tạo 4 bài luyện tập phù hợp từ lỗi của bạn...</div>'}</div>`:''}
     ${i===2?`<div id="practiceSummary" class="summary-card">Hoàn thành các bài luyện để nhận xét kết quả.</div><button class="btn restart">Tạo phân tích mới</button>`:''}
   </article>`).join('');
   $('.next-step').onclick=()=>goStep(2);
@@ -183,9 +299,10 @@ function bindPracticeEvents(){
 }
 
 function practiceMarkup(items){
-  const levels=['Cơ bản','Nâng cao'],classes={'Cơ bản':'basic','Nâng cao':'advanced'};
+  const levels=['Dễ hơn','Tương đương','Nâng cao'];
+  const classes={'Dễ hơn':'easier','Tương đương':'basic','Nâng cao':'advanced'};
   let number=0;
-  return `<div class="ai-created">✨ AI đã tạo 10 bài: 8 câu cơ bản và 2 câu nâng cao từ lỗi vừa phát hiện.</div>${levels.map(level=>({level,items:items.filter(x=>x.level===level)})).filter(group=>group.items.length).map(group=>`<section class="practice-level-group ${classes[group.level]}"><h4>${group.level} · ${group.items.length} câu</h4>${group.items.map(x=>{number++;return `<div class="practice-question" data-level="${x.level}" data-answer="${x.answer}"><label><span class="level-tag ${classes[group.level]}">${group.level}</span><strong class="question-number">Câu ${number}:</strong><span class="question-text">${x.question.replace(/^\s*Câu\s*\d+\s*[:.)-]?\s*/i,'')}</span></label><div class="practice-row"><input placeholder="Nhập đáp án"><button class="check-answer">Nộp đáp án</button></div><p class="answer-feedback hidden"></p></div>`}).join('')}</section>`).join('')}<button id="finishPractice" class="btn" disabled>Hoàn thành bài luyện →</button>`;
+  return `<div class="ai-created">✨ AI đã tạo 4 bài luyện tập: 1 câu dễ hơn, 2 câu cùng mức độ và 1 câu nâng cao.</div>${levels.map(level=>({level,items:items.filter(x=>x.level===level)})).filter(group=>group.items.length).map(group=>`<section class="practice-level-group ${classes[group.level]}"><h4>${group.level} · ${group.items.length} câu</h4>${group.items.map(x=>{number++;return `<div class="practice-question" data-level="${x.level}" data-answer="${x.answer}"><label><span class="level-tag ${classes[group.level]}">${group.level}</span><strong class="question-number">Câu ${number}:</strong><span class="question-text">${x.question.replace(/^\s*Câu\s*\d+\s*[:.)-]?\s*/i,'')}</span></label><div class="practice-row"><input placeholder="Nhập đáp án"><button class="check-answer">Nộp đáp án</button></div><p class="answer-feedback hidden"></p></div>`}).join('')}</section>`).join('')}<button id="finishPractice" class="btn" disabled>Hoàn thành bài luyện →</button>`;
 }
 
 function normalizeAnswer(value){return String(value||'').trim().toLowerCase().replace(/[–—−]/g,'-').replace(/[×·]/g,'*').replace(/:/g,'/').replace(/,/g,'.').replace(/\s+/g,'')}
@@ -211,18 +328,18 @@ const escapeHtml=value=>String(value||'').replace(/[&<>"']/g,char=>({'&':'&amp;'
 
 function demoReview(){
   const wrong=practiceAttempts.filter(x=>!x.isCorrect);
-  return {summary:wrong.length?`Bạn có ${wrong.length} câu cần xem lại.`:'Bạn đã hoàn thành rất tốt cả phần cơ bản lẫn nâng cao.',mistakes:wrong.map(x=>({steps:[`Bước 1: Thực hiện phép tính ${x.question.replace(/^Câu\s*\d+\s*:\s*/i,'')}.`,`Bước 2: Kết quả đúng là ${x.correctAnswer}.`]})),studyPlanner:{today:wrong.length?`Làm lại ${wrong.length} câu sai, ghi rõ từng phép tính.`:'Làm thêm 2 câu cùng dạng để duy trì kết quả tốt.',tomorrow:`Xem trước kiến thức ${currentAnalysis.knowledgePoint.name}.`,review:'Ôn lại các bước tính đã sai trước khi làm bài mới.'}};
+  return {summary:wrong.length?`Bạn có ${wrong.length} câu cần xem lại.`:'Bạn đã hoàn thành rất tốt cả phần cơ bản lẫn nâng cao.',mistakes:wrong.map(x=>({steps:[`Bước 1: Thực hiện phép tính ${x.question.replace(/^Câu\s*\d+\s*:\s*/i,'')}.`,`Bước 2: Kết quả đúng là ${x.correctAnswer}.`]})),studyPlanner:{today:wrong.length?`Làm lại ${wrong.length} câu sai, ghi rõ từng phép tính.`:'Làm thêm câu cùng dạng để duy trì kết quả tốt.',tomorrow:`Xem trước kiến thức ${currentAnalysis.knowledgePoint.name}.`,review:'Ôn lại các bước tính đã sai trước khi làm bài mới.'}};
 }
 
 function renderReview(summary,feedback,total){
   const wrong=practiceAttempts.filter(x=>!x.isCorrect);
   const errors=wrong.map((attempt,index)=>{
     const aiItem=(feedback.mistakes||[])[index]||{};
-    const cleanQuestion=attempt.question.replace(/^(?:Cơ bản|Nâng cao)\s*/i,'');
+    const cleanQuestion=attempt.question.replace(/^(?:Dễ hơn|Tương đương|Nâng cao)\s*/i,'');
     const steps=(aiItem.steps||[`Bước 1: Thực hiện phép tính ${cleanQuestion.replace(/^Câu\s*\d+\s*:\s*/i,'')}.`,`Bước 2: Kết quả đúng là ${attempt.correctAnswer}.`]).slice(0,4).map(step=>`<li>${escapeHtml(step)}</li>`).join('');
     return `<article class="review-mistake"><b>Câu sai ${index+1}</b><p class="review-question">${escapeHtml(cleanQuestion)}</p><p>Bạn làm: <s>${escapeHtml(attempt.submittedAnswer||'Chưa nhập')}</s></p><p>Đáp án đúng: <b>${escapeHtml(attempt.correctAnswer)}</b></p><p class="solution-label">Cách làm:</p><ol>${steps}</ol></article>`;
   }).join('');
-  const fallback={today:wrong.length?`Làm lại ${wrong.length} câu sai, ghi rõ từng phép tính.`:'Làm thêm 2 câu cùng dạng để duy trì kết quả tốt.',tomorrow:`Xem trước kiến thức ${currentAnalysis.knowledgePoint.name}.`,review:'Ôn lại các bước tính đã sai trước khi làm bài mới.'};
+  const fallback={today:wrong.length?`Làm lại ${wrong.length} câu sai, ghi rõ từng phép tính.`:'Làm thêm câu cùng dạng để duy trì kết quả tốt.',tomorrow:`Xem trước kiến thức ${currentAnalysis.knowledgePoint.name}.`,review:'Ôn lại các bước tính đã sai trước khi làm bài mới.'};
   const planner={...fallback,...(feedback.studyPlanner||{})};
   summary.innerHTML=`<b>Kết quả: ${correctCount}/${total} câu đúng</b><p>${escapeHtml(feedback.summary)}</p>${errors?`<div class="review-mistakes">${errors}</div>`:''}<section class="study-planner"><p class="planner-kicker">STUDY PLANNER</p><h4>Kế hoạch ôn tập của bạn</h4><div><b>📝 BTVN hôm nay</b><span>${escapeHtml(planner.today)}</span></div><div><b>📖 Xem trước ngày mai</b><span>${escapeHtml(planner.tomorrow)}</span></div><div><b>💡 Ôn bài cũ + lỗi còn hổng</b><span>${escapeHtml(planner.review)}</span></div></section>`;
 }
