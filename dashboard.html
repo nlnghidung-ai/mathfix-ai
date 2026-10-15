@@ -138,6 +138,108 @@
     .crop-tool-btn.primary:hover {
       background: #2563eb;
     }
+
+    /* Giao diện Màn hình Đối chiếu & Kiểm tra nội dung */
+    .confirm-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      margin-top: 16px;
+    }
+    .confirm-header {
+      margin-bottom: 18px;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 12px;
+    }
+    .confirm-header h2 {
+      font-size: 20px;
+      color: #0f172a;
+      margin: 0 0 6px 0;
+    }
+    .confirm-header p {
+      color: #64748b;
+      font-size: 14px;
+      margin: 0;
+    }
+    .confirm-content-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .text-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .text-box-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #475569;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .text-box-body {
+      color: #1e293b;
+      font-size: 15px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .confirm-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .btn-retake {
+      background: #ffffff;
+      color: #ef4444;
+      border: 1px solid #fca5a5;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-retake:hover {
+      background: #fef2f2;
+      border-color: #ef4444;
+    }
+    .btn-proceed {
+      background: #10b981;
+      color: #ffffff;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    }
+    .btn-proceed:hover {
+      background: #059669;
+    }
+
+    /* Thông báo nhắc nhở khi chụp lại */
+    .camera-tip-alert {
+      background: #fffbeb;
+      border-left: 4px solid #f59e0b;
+      padding: 14px 18px;
+      border-radius: 8px;
+      color: #92400e;
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
   </style>
 </head>
 <body class="dashboard">
@@ -147,16 +249,20 @@
     <div class="old-layout">
       <section id="uploadPanel" class="upload-panel old-upload">
         <div class="upload-title"><span>🖼️</span><h2>Tải bài làm của bạn lên</h2><p>Ảnh rõ nét sẽ giúp AI phân tích chính xác hơn</p></div>
+
+        <!-- Khung nhắc nhở màu vàng nổi bật nếu vừa bấm Chụp lại -->
+        <div id="retakeNotice" class="camera-tip-alert hidden">
+          <strong>💡 Mẹo chụp ảnh rõ nét:</strong> Bạn nên chụp ở nơi đủ sáng, đặt bài làm phẳng, giữ góc máy thẳng, chữ viết to rõ nét và không bị bóng che để AI đọc chính xác nhất nhé!
+        </div>
+
         <div class="input-tabs"><button class="tab active" data-tab="upload">Tải ảnh lên</button><button class="tab" data-tab="camera">Mở camera</button></div>
         
         <div id="uploadMode">
-          <!-- Vùng kéo thả khi chưa có ảnh -->
           <label id="emptyDropLabel" class="drop-zone old-drop" for="imageInput">
             <input id="imageInput" type="file" accept="image/png,image/jpeg" hidden>
             <div id="emptyDrop"><b>🖼️</b><h3>Kéo ảnh bài làm vào đây</h3><p>hoặc <strong>chọn ảnh từ thiết bị</strong></p><small>Hỗ trợ JPG, PNG · Tối đa 10 MB</small></div>
           </label>
           
-          <!-- Vùng xem trước ảnh kèm bộ công cụ Cắt & Xoay -->
           <div id="previewContainer" class="hidden">
             <div class="crop-wrapper">
               <img id="preview" alt="Xem trước bài làm">
@@ -171,7 +277,6 @@
           </div>
         </div>
 
-        <!-- Khung Camera -->
         <div id="cameraMode" class="hidden camera-box">
           <video id="cameraPreview" autoplay playsinline></video>
           <canvas id="cameraCanvas" class="hidden"></canvas>
@@ -187,13 +292,49 @@
         </div>
 
         <div class="practice-plan"><b>📚 Bộ luyện tập tự động</b><span>8 câu cơ bản + 2 câu nâng cao, tạo từ lỗi AI vừa phát hiện.</span></div>
-        <p id="uploadError" class="error-text hidden"></p><button id="analyzeBtn" class="btn" disabled>✨ Phân tích bài làm</button>
-        <p class="note">AI đọc ảnh bài làm và tạo lộ trình ôn tập riêng cho bạn.</p>
+        <p id="uploadError" class="error-text hidden"></p>
+        <button id="analyzeBtn" class="btn" disabled>🔍 Đọc nội dung ảnh</button>
+        <p class="note">AI sẽ đọc chữ trong ảnh để bạn kiểm tra trước khi phân tích.</p>
         <p class="ai-disclaimer" role="note">MathFix có thể đưa ra kết quả chưa hoàn toàn chính xác. Hãy kiểm tra và đối chiếu với đáp án hoặc hướng dẫn của giáo viên.</p>
       </section>
+
       <aside class="tip-panel"><div class="robot">🤖</div><h2>Mẹo nhỏ để AI đọc rõ hơn</h2><p>💡 Chụp ở nơi có đủ ánh sáng</p><p>📄 Đặt bài làm phẳng, không bị che</p><p>✍️ Viết chữ to và rõ nét nhé</p></aside>
     </div>
-    <section id="loadingPanel" class="loading-panel hidden"><div class="loader"></div><h2 id="loadingText">Đang đọc bài làm…</h2><p>Đang tìm lỗi và tạo lộ trình học riêng.</p></section>
+
+    <!-- MÀN HÌNH ĐỐI CHIẾU NỘI DUNG AI ĐÃ ĐỌC -->
+    <section id="confirmPanel" class="hidden">
+      <div class="confirm-card">
+        <div class="confirm-header">
+          <h2>🔍 Kiểm tra nội dung AI vừa đọc</h2>
+          <p>Hãy xem AI có đọc đúng đề bài và các bước giải của bạn không nhé:</p>
+        </div>
+
+        <div class="confirm-content-grid">
+          <div class="text-box">
+            <div class="text-box-title"><span>📝</span> Đề bài AI đọc được:</div>
+            <div id="scannedProblem" class="text-box-body"></div>
+          </div>
+          <div class="text-box">
+            <div class="text-box-title"><span>✍️</span> Bài làm của bạn:</div>
+            <div id="scannedStudentWork" class="text-box-body"></div>
+          </div>
+        </div>
+
+        <div class="confirm-actions">
+          <button id="rejectBtn" class="btn-retake" type="button">✕ Chưa đúng, chụp lại</button>
+          <button id="confirmBtn" class="btn-proceed" type="button">✓ Đúng rồi, phân tích tiếp →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Màn hình chờ khi AI đọc ảnh hoặc phân tích -->
+    <section id="loadingPanel" class="loading-panel hidden">
+      <div class="loader"></div>
+      <h2 id="loadingText">Đang đọc bài làm…</h2>
+      <p id="loadingSubtext">Đang nhận diện chữ và công thức...</p>
+    </section>
+
+    <!-- Khu vực hiển thị kết quả -->
     <section id="resultPanel" class="hidden">
       <div class="result-layout">
         <div><div class="section-title"><div><p class="eyebrow">LEARNING ERROR</p><h2>Chỗ mình cần xem lại</h2></div><span id="topicLabel"></span></div><div id="problemNavigator"></div><div id="errorList"></div><article class="source-card"><p class="eyebrow">BÀI LÀM ĐÃ PHÂN TÍCH</p><img id="resultImage" alt="Bài làm đã tải"></article></div>
@@ -201,7 +342,7 @@
       </div>
     </section>
   </main>
-  <!-- Nhúng thư viện Cropper JS -->
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
   <script>window.LEARNING_DEMO_MODE = new URLSearchParams(location.search).has('demo');</script>
   <script src="domain.js"></script><script src="mock-analysis-service.js"></script><script src="vision-analysis.js"></script><script src="learning-path.js"></script>
