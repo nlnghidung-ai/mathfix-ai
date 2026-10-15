@@ -1,35 +1,25 @@
-// Chỉ thị 0: Quét nội dung đề bài và bài làm
-const scanInstructions = `Bạn là trợ lý đọc ảnh bài làm học sinh. Hãy đọc trung thực nguyên văn:
-1. Đề bài trong ảnh.
-2. Từng bước giải/phép tính của học sinh.
-Không suy luận, không chấm đúng sai ở bước này. Trình bày tự nhiên, dễ đọc, KHÔNG dùng ký tự $.
-Trả về duy nhất JSON đúng cấu trúc:
-{"readable":true,"needsRetake":false,"problemText":"Nội dung đề bài","studentWorkText":"Nội dung bài làm từng bước của học sinh","message":""}
-Nếu chữ quá mờ không đọc nổi: readable:false, needsRetake:true, message:"Ảnh quá mờ hoặc thiếu sáng, hãy chụp lại."`;
-
-// Chỉ thị 1: Chỉ tập trung phát hiện lỗi từ ảnh, KHÔNG tạo bài tập ở bước này
+// Chỉ thị 1: Chỉ tập trung phát hiện lỗi từ ảnh, KHÔNG tạo bài tập ở bước này (để tránh timeout)
 const analyzeInstructions = `Bạn là trợ lý sư phạm phân tích ẢNH BÀI LÀM học sinh Việt Nam.
-Quy trình bắt buộc: (1) đọc đề bài, (2) đọc từng phép tính/bước làm của học sinh, (3) tự tính lại, (4) chỉ ra lỗi dựa trên bằng chứng nhìn thấy trong ảnh.
-Ảnh có thể có NHIỀU bài. Phải tách từng bài độc lập; không gộp lỗi của bài này sang bài khác.
-Chỉ tập trung phát hiện lỗi và kiến thức cần ôn, KHÔNG tự tạo bài tập. Trình bày tự nhiên, KHÔNG dùng ký tự $.
+Quy trình bắt buộc: (1) đọc nguyên văn đề bài, (2) đọc từng phép tính/bước làm của học sinh, (3) tự tính lại, (4) chỉ ra lỗi dựa trên bằng chứng nhìn thấy trong ảnh.
+Ảnh có thể có NHIỀU bài. Phải tách từng bài độc lập; không gộp lỗi của bài này sang bài khác. Không khẳng định lỗi nếu chữ hoặc đề bài mờ.
+Chỉ tập trung phát hiện lỗi và kiến thức cần ôn, KHÔNG tự tạo bài tập.
 Trả về duy nhất JSON đúng cấu trúc:
 {"readable":true,"needsRetake":false,"message":"","analyses":[{"title":"Bài 1","subject":"Toán","topic":"","errors":[{"position":"","studentWork":"","expectedWork":"","title":"","explanation":"","note":""}],"improvements":[""]}]}
 Nếu không đọc rõ: readable:false, needsRetake:true, analyses:[] và message nêu rõ phần nào cần chụp lại.
-Nếu readable:true: mỗi phần tử analyses là đúng một bài có ít nhất một lỗi nhìn thấy.`;
+Nếu readable:true: mỗi phần tử analyses là đúng một bài có ít nhất một lỗi nhìn thấy. errors phải dựa vào biểu thức/bài làm trong ảnh.`;
 
-// Chỉ thị 2: Sinh 10 bài luyện tập từ lỗi sai
+// Chỉ thị 2: Sinh 10 bài luyện tập từ lỗi sai (chỉ xử lý văn bản, không gửi ảnh, chạy cực nhanh)
 const exerciseInstructions = `Bạn là trợ lý sư phạm Toán. Dựa vào chủ đề và các lỗi học sinh vừa mắc phải, hãy TỰ TẠO bộ luyện tập gồm đúng 8 câu mức "Cơ bản" và 2 câu mức "Nâng cao" bám sát dạng toán và lỗi này để học sinh củng cố kiến thức.
 Quy tắc:
 - 8 câu đầu mức "Cơ bản" (rèn quy tắc, tính toán nền tảng).
 - 2 câu sau mức "Nâng cao" (vận dụng, phân tích).
 - Các câu hỏi phải đa dạng, tự kiểm tra đáp án.
-- question: chỉ chứa nội dung đề bài, KHÔNG ghi tiền tố "Câu 1:" hay "Bài 1:". Trình bày tự nhiên, KHÔNG dùng ký hiệu $.
+- question: chỉ chứa nội dung đề bài, KHÔNG ghi tiền tố "Câu 1:" hay "Bài 1:".
 - answer: đáp án ngắn gọn (chỉ số nguyên, phân số dạng a/b, hoặc biểu thức rút gọn), không giải thích dài dòng ở trường answer.
 - solution: lời giải ngắn gọn 1-2 dòng.
 Trả về DUY NHẤT JSON đúng cấu trúc:
 {"exercises":[{"level":"Cơ bản","question":"","answer":"","solution":""}]}`;
 
-// Chỉ thị 3: Nhận xét sau bài luyện tập
 const reviewInstructions = `Bạn là trợ lý sư phạm. Dựa HOÀN TOÀN vào dữ liệu bài luyện đã nộp, chỉ xét attempts có isCorrect:false, đúng thứ tự; không bịa thêm lỗi.
 Với MỖI câu sai, tạo 2 đến 4 bước giải đúng, rõ như bài làm ngắn. Mỗi bước một câu, tối đa 18 từ và có phép tính/biến đổi CỤ THỂ từ đề. Không viết "đọc kỹ đề", "tính lần lượt" hoặc "đối chiếu đáp án". Không viết lại đề, đáp án hoặc mức độ.
 summary tối đa 2 câu. Tạo studyPlanner bám sát lỗi sai: today, tomorrow, review; mỗi mục tối đa 22 từ.
@@ -50,73 +40,10 @@ function extractText(body) {
   return parts.join('');
 }
 
-// BỘ TỰ ĐỘNG SỬA TẤT CẢ LỖI ESCAPE CỦA JSON DO KÝ HIỆU TOÁN HỌC GÂY RA
-function repairJson(jsonStr) {
-  let result = '';
-  let inString = false;
-  let i = 0;
-
-  while (i < jsonStr.length) {
-    const char = jsonStr[i];
-
-    if (!inString) {
-      if (char === '"') inString = true;
-      result += char;
-      i++;
-    } else {
-      if (char === '"') {
-        inString = false;
-        result += char;
-        i++;
-      } else if (char === '\\') {
-        const next = jsonStr[i + 1];
-        if (!next) {
-          result += '\\\\';
-          i++;
-        } else if (next === '"' || next === '\\' || next === '/') {
-          result += '\\' + next;
-          i += 2;
-        } else if (next === 'b' || next === 'f' || next === 'n' || next === 'r' || next === 't') {
-          const afterNext = jsonStr[i + 2];
-          // Nếu \frac, \neq, \times... đi liền với chữ cái, đây là ký hiệu toán, cần escape \\
-          if (afterNext && /[a-zA-Z]/.test(afterNext)) {
-            result += '\\\\' + next;
-            i += 2;
-          } else {
-            result += '\\' + next;
-            i += 2;
-          }
-        } else if (next === 'u' && /^[0-9a-fA-F]{4}$/.test(jsonStr.slice(i + 2, i + 6))) {
-          result += jsonStr.slice(i, i + 6);
-          i += 6;
-        } else {
-          // Bất kỳ ký hiệu nào khác đi sau dấu \ (như \(, \), \[, \], \{, \}, \s, \d, \p, \+, \-, v.v.)
-          // Tự động thêm một dấu \ để thành \\ hợp lệ trong JSON
-          result += '\\\\' + next;
-          i += 2;
-        }
-      } else if (char === '\n') {
-        result += '\\n';
-        i++;
-      } else if (char === '\r') {
-        i++;
-      } else if (char === '\t') {
-        result += '\\t';
-        i++;
-      } else {
-        result += char;
-        i++;
-      }
-    }
-  }
-  return result;
-}
-
 function parseJson(text) {
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) throw new Error('Mô hình không trả về dữ liệu hợp lệ.');
-  const cleaned = repairJson(match[0]);
-  return JSON.parse(cleaned);
+  return JSON.parse(match[0]);
 }
 
 async function requestAI(input) {
@@ -131,8 +58,9 @@ async function requestAI(input) {
     input: input
   };
 
+  // Nếu dùng dòng GPT-5, hạ mức độ suy luận xuống để phản hồi trong 5-8 giây, tránh timeout Netlify
   if (model.includes('gpt-5') && !model.includes('nano')) {
-    payload.reasoning = { effort: 'minimal' };
+    payload.reasoning = { effort: 'minimal' }; // hoặc 'low'
   }
 
   const response = await fetch('https://api.openai.com/v1/responses', {
@@ -149,28 +77,17 @@ async function requestAI(input) {
   return parseJson(extractText(await response.json()));
 }
 
-// BƯỚC 0: Quét nhanh chữ và đề bài để học sinh đối chiếu
-export async function scanImage(image) {
+// BƯỚC 1: Đọc ảnh & Tìm lỗi sai (Vision)
+export async function analyzeImage(image) {
   if (typeof image !== 'string' || !image.startsWith('data:image/')) throw new Error('Ảnh tải lên không hợp lệ.');
   const requestCode = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   return requestAI([{ role: 'user', content: [
-    { type: 'input_text', text: `${scanInstructions}\n\nMã phiên: ${requestCode}.` },
+    { type: 'input_text', text: `${analyzeInstructions}\n\nMã phiên: ${requestCode}.` },
     { type: 'input_image', image_url: image, detail: 'high' }
   ] }]);
 }
 
-// BƯỚC 1: Phân tích bài làm và tìm lỗi sai
-export async function analyzeImage(image, transcribed) {
-  if (typeof image !== 'string' || !image.startsWith('data:image/')) throw new Error('Ảnh tải lên không hợp lệ.');
-  const requestCode = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  const contextNote = transcribed ? `\nNội dung học sinh đã xác nhận:\n- Đề bài: ${transcribed.problemText}\n- Bài làm: ${transcribed.studentWorkText}\n` : '';
-  return requestAI([{ role: 'user', content: [
-    { type: 'input_text', text: `${analyzeInstructions}${contextNote}\nMã phiên: ${requestCode}.` },
-    { type: 'input_image', image_url: image, detail: 'high' }
-  ] }]);
-}
-
-// BƯỚC 2: Sinh 10 bài luyện tập từ lỗi sai
+// BƯỚC 2: Sinh 10 bài luyện tập từ chủ đề & lỗi sai (Text thuần)
 export async function generateExercises(data) {
   const { topic, errors } = data;
   return requestAI([{ role: 'user', content: [
@@ -178,7 +95,7 @@ export async function generateExercises(data) {
   ] }]);
 }
 
-// BƯỚC 3: Nhận xét sau bài luyện tập
+// BƯỚC 3: Nhận xét kết quả bài tập
 export async function reviewPractice(data) {
   if (!Array.isArray(data.attempts) || !data.attempts.length) throw new Error('Chưa có đáp án để AI nhận xét.');
   return requestAI([{ role: 'user', content: [{ type: 'input_text', text: `${reviewInstructions}\n\nDữ liệu:\n${JSON.stringify(data)}` }] }]);
