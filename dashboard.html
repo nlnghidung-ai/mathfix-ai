@@ -4,10 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>MATHFIX AI — Phân tích bài làm</title>
+  
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="learning-path.css">
+
   <style>
     /* Camera UI */
     .camera-box {
@@ -143,7 +148,7 @@
       border: 1px solid #a7f3d0;
     }
 
-    /* Nút và Khung Thẩm định lại: AI chỉ sai rồi */
+    /* Nút Thẩm định lại: AI chỉ sai rồi */
     .recheck-box {
       margin-top: 14px;
       padding-top: 12px;
@@ -192,7 +197,7 @@
       color: #fff !important;
     }
 
-    /* Màn hình Kiểm tra nội dung bài toán đã đọc */
+    /* Màn hình Đối chiếu */
     .confirm-card {
       background: #ffffff;
       border: 1px solid #e2e8f0;
@@ -277,12 +282,216 @@
     .btn-primary:hover {
       background: #1d4ed8;
     }
+    .katex {
+      font-size: 1.08em;
+      text-rendering: auto;
+    }
+
+    /* GIAO DIỆN AUTH: NÚT GOOGLE & THÔNG TIN HỌC SINH */
+    .user-profile-nav {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #f1f5f9;
+      padding: 4px 12px 4px 6px;
+      border-radius: 20px;
+      border: 1px solid #e2e8f0;
+    }
+    .user-avatar {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    .user-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1e293b;
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .btn-google-login {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #ffffff;
+      color: #374151;
+      border: 1px solid #d1d5db;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .btn-google-login:hover {
+      background: #f9fafb;
+      border-color: #9ca3af;
+    }
+    .btn-history-nav {
+      background: #eff6ff;
+      color: #2563eb;
+      border: 1px solid #bfdbfe;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-history-nav:hover {
+      background: #dbeafe;
+    }
+    .btn-logout-nav {
+      background: transparent;
+      color: #64748b;
+      border: none;
+      font-size: 13px;
+      cursor: pointer;
+      padding: 6px 8px;
+    }
+    .btn-logout-nav:hover {
+      color: #ef4444;
+    }
+
+    /* MODAL LỊCH SỬ HỌC TẬP */
+    .history-modal {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .history-modal-box {
+      background: #ffffff;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 600px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    .history-modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .history-modal-head h3 {
+      margin: 0;
+      font-size: 18px;
+      color: #0f172a;
+    }
+    .btn-close-modal {
+      background: none;
+      border: none;
+      font-size: 20px;
+      color: #64748b;
+      cursor: pointer;
+    }
+    .history-tabs {
+      display: flex;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 0 20px;
+      gap: 12px;
+    }
+    .history-tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      padding: 12px 6px;
+      font-weight: 600;
+      color: #64748b;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .history-tab-btn.active {
+      color: #2563eb;
+      border-bottom-color: #2563eb;
+    }
+    .history-list {
+      padding: 16px 20px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .history-item {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+    .history-item-head {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .history-item-head b {
+      color: #1e293b;
+      font-size: 14px;
+    }
+    .history-item-head small {
+      color: #94a3b8;
+      font-size: 12px;
+    }
+    .history-item-problem {
+      margin: 0 0 8px 0;
+      font-size: 13px;
+      color: #475569;
+      line-height: 1.4;
+    }
+    .history-item-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .history-item-badge.warn {
+      background: #fef3c7;
+      color: #b45309;
+    }
+    .history-item-badge.good {
+      background: #dcfce7;
+      color: #15803d;
+    }
+    .history-practice-score {
+      font-size: 13px;
+      color: #1e293b;
+    }
+    .history-practice-score strong {
+      color: #2563eb;
+    }
+    .history-loading, .history-empty {
+      text-align: center;
+      padding: 30px;
+      color: #94a3b8;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body class="dashboard">
   <nav class="nav wrap">
     <a class="brand" href="index.html"><b>✦</b> MATHFIX <span>AI</span></a>
-    <span class="workspace">✨ Không gian học tập</span>
+    
+    <!-- KHU VỰC ĐĂNG NHẬP GOOGLE HOẶC TÀI KHOẢN HỌC SINH -->
+    <div id="authNavArea"></div>
   </nav>
 
   <main class="wrap learning-page">
@@ -427,11 +636,49 @@
     </section>
   </main>
 
+  <!-- MODAL XEM LỊCH SỬ HỌC TẬP -->
+  <div id="historyModal" class="history-modal hidden">
+    <div class="history-modal-box">
+      <div class="history-modal-head">
+        <h3>📜 Lịch sử học tập của bạn</h3>
+        <button id="btnCloseHistoryModal" class="btn-close-modal">✕</button>
+      </div>
+      <div class="history-tabs">
+        <button class="history-tab-btn active" data-type="analysis">📝 Bài đã phân tích</button>
+        <button class="history-tab-btn" data-type="practice">📚 Bài đã luyện tập</button>
+      </div>
+      <div id="historyListContent" class="history-list">
+        <div class="history-loading">Đang tải lịch sử...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Thư viện Supabase JS qua CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- File xử lý Đăng nhập Google & Lưu lịch sử -->
+  <script src="auth.js?v=1"></script>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
   <script>window.LEARNING_DEMO_MODE = new URLSearchParams(location.search).has('demo');</script>
-  <script src="domain.js?v=5"></script>
-  <script src="mock-analysis-service.js?v=5"></script>
-  <script src="vision-analysis.js?v=5"></script>
-  <script src="learning-path.js?v=5"></script>
+  <script src="domain.js?v=6"></script>
+  <script src="mock-analysis-service.js?v=6"></script>
+  <script src="vision-analysis.js?v=6"></script>
+  <script src="learning-path.js?v=6"></script>
+
+  <script>
+    // Xử lý sự kiện đóng/mở Modal Lịch sử
+    document.getElementById('btnCloseHistoryModal').onclick = () => {
+      document.getElementById('historyModal').classList.add('hidden');
+    };
+    document.querySelectorAll('.history-tab-btn').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('.history-tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        if (typeof loadHistoryTab === 'function') {
+          loadHistoryTab(btn.dataset.type);
+        }
+      };
+    });
+  </script>
 </body>
 </html>
