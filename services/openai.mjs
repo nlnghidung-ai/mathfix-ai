@@ -1,11 +1,24 @@
-const instructions = `Bạn là trợ lý sư phạm phân tích ẢNH BÀI LÀM học sinh Việt Nam.
+// Chỉ thị 1: Chỉ tập trung phát hiện lỗi từ ảnh, KHÔNG tạo bài tập ở bước này (để tránh timeout)
+const analyzeInstructions = `Bạn là trợ lý sư phạm phân tích ẢNH BÀI LÀM học sinh Việt Nam.
 Quy trình bắt buộc: (1) đọc nguyên văn đề bài, (2) đọc từng phép tính/bước làm của học sinh, (3) tự tính lại, (4) chỉ ra lỗi dựa trên bằng chứng nhìn thấy trong ảnh.
 Ảnh có thể có NHIỀU bài. Phải tách từng bài độc lập; không gộp lỗi của bài này sang bài khác. Không khẳng định lỗi nếu chữ hoặc đề bài mờ.
+Chỉ tập trung phát hiện lỗi và kiến thức cần ôn, KHÔNG tự tạo bài tập.
 Trả về duy nhất JSON đúng cấu trúc:
-{"readable":true,"needsRetake":false,"message":"","analyses":[{"title":"Bài 1","subject":"Toán","topic":"","errors":[{"position":"","studentWork":"","expectedWork":"","title":"","explanation":"","note":""}],"exercises":[{"question":"","answer":"","solution":"","level":""}],"improvements":[""]}]}
+{"readable":true,"needsRetake":false,"message":"","analyses":[{"title":"Bài 1","subject":"Toán","topic":"","errors":[{"position":"","studentWork":"","expectedWork":"","title":"","explanation":"","note":""}],"improvements":[""]}]}
 Nếu không đọc rõ: readable:false, needsRetake:true, analyses:[] và message nêu rõ phần nào cần chụp lại.
-Nếu readable:true: mỗi phần tử analyses là đúng một bài có ít nhất một lỗi nhìn thấy. errors phải dựa vào biểu thức/bài làm trong ảnh.
-TỰ TẠO bài tập trực tiếp từ lỗi vừa phát hiện, không dùng ngân hàng câu hỏi, dữ liệu PDF, ví dụ có sẵn hoặc câu hỏi từ các lượt trước. Với MỖI bài, tạo đúng 8 câu mức "Cơ bản" và 2 câu mức "Nâng cao". Các câu phải đa dạng, tự kiểm tra đáp án. exercises nhóm theo Cơ bản rồi Nâng cao. question chỉ chứa đề bài, không thêm số thứ tự. answer ngắn, solution ngắn, đúng.`;
+Nếu readable:true: mỗi phần tử analyses là đúng một bài có ít nhất một lỗi nhìn thấy. errors phải dựa vào biểu thức/bài làm trong ảnh.`;
+
+// Chỉ thị 2: Sinh 10 bài luyện tập từ lỗi sai (chỉ xử lý văn bản, không gửi ảnh, chạy cực nhanh)
+const exerciseInstructions = `Bạn là trợ lý sư phạm Toán. Dựa vào chủ đề và các lỗi học sinh vừa mắc phải, hãy TỰ TẠO bộ luyện tập gồm đúng 8 câu mức "Cơ bản" và 2 câu mức "Nâng cao" bám sát dạng toán và lỗi này để học sinh củng cố kiến thức.
+Quy tắc:
+- 8 câu đầu mức "Cơ bản" (rèn quy tắc, tính toán nền tảng).
+- 2 câu sau mức "Nâng cao" (vận dụng, phân tích).
+- Các câu hỏi phải đa dạng, tự kiểm tra đáp án.
+- question: chỉ chứa nội dung đề bài, KHÔNG ghi tiền tố "Câu 1:" hay "Bài 1:".
+- answer: đáp án ngắn gọn (chỉ số nguyên, phân số dạng a/b, hoặc biểu thức rút gọn), không giải thích dài dòng ở trường answer.
+- solution: lời giải ngắn gọn 1-2 dòng.
+Trả về DUY NHẤT JSON đúng cấu trúc:
+{"exercises":[{"level":"Cơ bản","question":"","answer":"","solution":""}]}`;
 
 const reviewInstructions = `Bạn là trợ lý sư phạm. Dựa HOÀN TOÀN vào dữ liệu bài luyện đã nộp, chỉ xét attempts có isCorrect:false, đúng thứ tự; không bịa thêm lỗi.
 Với MỖI câu sai, tạo 2 đến 4 bước giải đúng, rõ như bài làm ngắn. Mỗi bước một câu, tối đa 18 từ và có phép tính/biến đổi CỤ THỂ từ đề. Không viết "đọc kỹ đề", "tính lần lượt" hoặc "đối chiếu đáp án". Không viết lại đề, đáp án hoặc mức độ.
@@ -49,15 +62,25 @@ async function requestAI(input) {
   return parseJson(extractText(await response.json()));
 }
 
+// BƯỚC 1: Đọc ảnh & Tìm lỗi sai (Vision)
 export async function analyzeImage(image) {
   if (typeof image !== 'string' || !image.startsWith('data:image/')) throw new Error('Ảnh tải lên không hợp lệ.');
   const requestCode = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   return requestAI([{ role: 'user', content: [
-    { type: 'input_text', text: `${instructions}\n\nMã lượt tạo độc lập: ${requestCode}. Hãy tạo bộ câu mới cho đúng lượt này.` },
+    { type: 'input_text', text: `${analyzeInstructions}\n\nMã phiên: ${requestCode}.` },
     { type: 'input_image', image_url: image, detail: 'high' }
   ] }]);
 }
 
+// BƯỚC 2: Sinh 10 bài luyện tập từ chủ đề & lỗi sai (Text thuần)
+export async function generateExercises(data) {
+  const { topic, errors } = data;
+  return requestAI([{ role: 'user', content: [
+    { type: 'input_text', text: `${exerciseInstructions}\n\nChủ đề: ${topic || 'Đại số'}\nCác lỗi học sinh mắc: ${JSON.stringify(errors || [])}` }
+  ] }]);
+}
+
+// BƯỚC 3: Nhận xét kết quả bài tập
 export async function reviewPractice(data) {
   if (!Array.isArray(data.attempts) || !data.attempts.length) throw new Error('Chưa có đáp án để AI nhận xét.');
   return requestAI([{ role: 'user', content: [{ type: 'input_text', text: `${reviewInstructions}\n\nDữ liệu:\n${JSON.stringify(data)}` }] }]);
