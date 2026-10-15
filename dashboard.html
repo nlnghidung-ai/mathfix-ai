@@ -4,7 +4,141 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>MATHFIX AI — Phân tích bài làm</title>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Thư viện Cropper.js -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
   <link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="learning-path.css">
+  <style>
+    /* Camera UI */
+    .camera-box {
+      position: relative !important;
+      overflow: hidden;
+      border-radius: 18px;
+      background: #0f172a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 380px;
+    }
+    #cameraPreview {
+      width: 100%;
+      height: 100%;
+      max-height: 480px;
+      object-fit: cover;
+      display: block;
+      border-radius: 16px;
+    }
+    #cameraMessage {
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      margin: 0;
+      padding: 6px 16px;
+      background: rgba(15, 23, 42, 0.75);
+      color: #fff;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 500;
+      backdrop-filter: blur(6px);
+      z-index: 10;
+      pointer-events: none;
+      white-space: nowrap;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    #captureBtn.camera-shutter-btn {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      border: 4px solid #ffffff;
+      background: rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      outline: none;
+      z-index: 15;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+    #captureBtn.camera-shutter-btn:hover {
+      transform: translateX(-50%) scale(1.06);
+      background: rgba(255, 255, 255, 0.35);
+    }
+    #captureBtn.camera-shutter-btn:active {
+      transform: translateX(-50%) scale(0.92);
+    }
+    .shutter-inner-circle {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: #ffffff;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Vùng chứa Cropper & Toolbar công cụ ảnh */
+    .crop-wrapper {
+      width: 100%;
+      max-height: 480px;
+      min-height: 250px;
+      overflow: hidden;
+      background: #0f172a;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .crop-wrapper img {
+      max-width: 100%;
+      max-height: 460px;
+      display: block;
+    }
+    .crop-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 12px;
+      margin-bottom: 8px;
+    }
+    .crop-tool-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .crop-tool-btn:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+      color: #0f172a;
+    }
+    .crop-tool-btn.primary {
+      background: #3b82f6;
+      color: #fff;
+      border-color: #3b82f6;
+    }
+    .crop-tool-btn.primary:hover {
+      background: #2563eb;
+    }
+  </style>
 </head>
 <body class="dashboard">
   <nav class="nav wrap"><a class="brand" href="index.html"><b>✦</b> MATHFIX <span>AI</span></a><span class="workspace">✨ Không gian học tập</span></nav>
@@ -14,8 +148,44 @@
       <section id="uploadPanel" class="upload-panel old-upload">
         <div class="upload-title"><span>🖼️</span><h2>Tải bài làm của bạn lên</h2><p>Ảnh rõ nét sẽ giúp AI phân tích chính xác hơn</p></div>
         <div class="input-tabs"><button class="tab active" data-tab="upload">Tải ảnh lên</button><button class="tab" data-tab="camera">Mở camera</button></div>
-        <div id="uploadMode"><label class="drop-zone old-drop" for="imageInput"><input id="imageInput" type="file" accept="image/png,image/jpeg" hidden><div id="emptyDrop"><b>🖼️</b><h3>Kéo ảnh bài làm vào đây</h3><p>hoặc <strong>chọn ảnh từ thiết bị</strong></p><small>Hỗ trợ JPG, PNG · Tối đa 10 MB</small></div><img id="preview" class="hidden" alt="Xem trước bài làm"></label></div>
-        <div id="cameraMode" class="hidden camera-box"><video id="cameraPreview" autoplay playsinline></video><canvas id="cameraCanvas" class="hidden"></canvas><p id="cameraMessage">Cho phép camera để chụp bài làm.</p><button id="captureBtn" class="ghost">📸 Chụp ảnh</button></div>
+        
+        <div id="uploadMode">
+          <!-- Vùng kéo thả khi chưa có ảnh -->
+          <label id="emptyDropLabel" class="drop-zone old-drop" for="imageInput">
+            <input id="imageInput" type="file" accept="image/png,image/jpeg" hidden>
+            <div id="emptyDrop"><b>🖼️</b><h3>Kéo ảnh bài làm vào đây</h3><p>hoặc <strong>chọn ảnh từ thiết bị</strong></p><small>Hỗ trợ JPG, PNG · Tối đa 10 MB</small></div>
+          </label>
+          
+          <!-- Vùng xem trước ảnh kèm bộ công cụ Cắt & Xoay -->
+          <div id="previewContainer" class="hidden">
+            <div class="crop-wrapper">
+              <img id="preview" alt="Xem trước bài làm">
+            </div>
+            <div class="crop-toolbar">
+              <button id="rotateLeftBtn" class="crop-tool-btn" type="button" title="Xoay trái 90°">↺ Xoay trái</button>
+              <button id="rotateRightBtn" class="crop-tool-btn" type="button" title="Xoay phải 90°">↻ Xoay phải</button>
+              <button id="applyCropBtn" class="crop-tool-btn primary" type="button" title="Áp dụng cắt vùng đã chọn">✂️ Cắt ảnh</button>
+              <button id="resetCropBtn" class="crop-tool-btn" type="button" title="Khôi phục lại ảnh ban đầu">🔄 Khôi phục</button>
+              <button id="reselectBtn" class="crop-tool-btn" type="button" title="Chọn ảnh khác">📁 Chọn ảnh khác</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Khung Camera -->
+        <div id="cameraMode" class="hidden camera-box">
+          <video id="cameraPreview" autoplay playsinline></video>
+          <canvas id="cameraCanvas" class="hidden"></canvas>
+          <p id="cameraMessage">Cho phép camera để chụp bài làm.</p>
+          <button id="captureBtn" class="camera-shutter-btn" type="button" title="Chụp ảnh bài làm" aria-label="Chụp ảnh">
+            <span class="shutter-inner-circle">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+                <circle cx="12" cy="13" r="3"/>
+              </svg>
+            </span>
+          </button>
+        </div>
+
         <div class="practice-plan"><b>📚 Bộ luyện tập tự động</b><span>8 câu cơ bản + 2 câu nâng cao, tạo từ lỗi AI vừa phát hiện.</span></div>
         <p id="uploadError" class="error-text hidden"></p><button id="analyzeBtn" class="btn" disabled>✨ Phân tích bài làm</button>
         <p class="note">AI đọc ảnh bài làm và tạo lộ trình ôn tập riêng cho bạn.</p>
@@ -31,6 +201,8 @@
       </div>
     </section>
   </main>
+  <!-- Nhúng thư viện Cropper JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
   <script>window.LEARNING_DEMO_MODE = new URLSearchParams(location.search).has('demo');</script>
   <script src="domain.js"></script><script src="mock-analysis-service.js"></script><script src="vision-analysis.js"></script><script src="learning-path.js"></script>
 </body>
