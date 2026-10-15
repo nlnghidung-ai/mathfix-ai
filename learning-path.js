@@ -3,8 +3,42 @@ let imageUrl='',cameraStream=null,currentResult=null,currentAnalysis=null,correc
 function setImage(src){imageUrl=src;$('#preview').src=src;$('#preview').classList.remove('hidden');$('#emptyDrop').classList.add('hidden');$('#analyzeBtn').disabled=false;$('#uploadError').classList.add('hidden')}
 function showInputError(message){$('#uploadError').textContent=message;$('#uploadError').classList.remove('hidden')}
 $('#imageInput').onchange=e=>{const f=e.target.files[0];if(!f)return;if(!['image/jpeg','image/png'].includes(f.type)||f.size>10*1024*1024){showInputError('Hãy chọn ảnh JPG hoặc PNG, dung lượng không quá 10 MB.');return}const reader=new FileReader();reader.onload=()=>setImage(reader.result);reader.readAsDataURL(f)};
-$$('.tab').forEach(t=>t.onclick=async()=>{const camera=t.dataset.tab==='camera';$$('.tab').forEach(x=>x.classList.toggle('active',x===t));$('#uploadMode').classList.toggle('hidden',camera);$('#cameraMode').classList.toggle('hidden',!camera);if(!camera)return;try{cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});$('#cameraPreview').srcObject=cameraStream;$('#cameraMessage').textContent='Canh bài làm vào khung rồi nhấn Chụp ảnh.'}catch{$('#cameraMessage').textContent='Không thể mở camera. Bạn vẫn có thể chuyển sang Tải ảnh lên.'}});
-$('#captureBtn').onclick=()=>{const v=$('#cameraPreview'),c=$('#cameraCanvas');if(!v.videoWidth)return;c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d').drawImage(v,0,0);setImage(c.toDataURL('image/jpeg'));cameraStream?.getTracks().forEach(t=>t.stop())};
+
+$$('.tab').forEach(t=>t.onclick=async()=>{
+  const camera=t.dataset.tab==='camera';
+  $$('.tab').forEach(x=>x.classList.toggle('active',x===t));
+  $('#uploadMode').classList.toggle('hidden',camera);
+  $('#cameraMode').classList.toggle('hidden',!camera);
+  if(!camera){
+    cameraStream?.getTracks().forEach(track=>track.stop());
+    cameraStream=null;
+    return;
+  }
+  try{
+    cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    $('#cameraPreview').srcObject=cameraStream;
+    $('#cameraMessage').textContent='Canh bài làm vào khung rồi nhấn Chụp ảnh.';
+  }catch{
+    $('#cameraMessage').textContent='Không thể mở camera. Bạn vẫn có thể chuyển sang Tải ảnh lên.';
+  }
+});
+
+$('#captureBtn').onclick=()=>{
+  const v=$('#cameraPreview'),c=$('#cameraCanvas');
+  if(!v.videoWidth)return;
+  c.width=v.videoWidth;
+  c.height=v.videoHeight;
+  c.getContext('2d').drawImage(v,0,0);
+  setImage(c.toDataURL('image/jpeg'));
+  cameraStream?.getTracks().forEach(t=>t.stop());
+  cameraStream=null;
+  
+  // Tự động chuyển về tab "Tải ảnh lên" để xem lại ảnh vừa chụp
+  $$('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab==='upload'));
+  $('#uploadMode').classList.remove('hidden');
+  $('#cameraMode').classList.add('hidden');
+};
+
 $('#analyzeBtn').onclick=async()=>{if(!imageUrl)return;$('.old-layout').classList.add('hidden');$('#loadingPanel').classList.remove('hidden');const demo=window.LEARNING_DEMO_MODE===true;const messages=demo?['Đang đọc nội dung bài làm…','Đang xác định kiến thức và lỗi sai…','Đang tạo 8 câu cơ bản và 2 câu nâng cao…']:['Đang gửi ảnh đến AI…','AI đang đọc toàn bộ bài trong ảnh…','AI đang tách từng bài, tìm lỗi và tạo bài luyện…'];let i=0;$('#loadingText').textContent=messages[i];const timer=setInterval(()=>{$('#loadingText').textContent=messages[Math.min(++i,messages.length-1)]},1200);try{if(demo){setTimeout(()=>{clearInterval(timer);showResult({analysisSets:[MockAnalysisService.analyze(imageUrl)],sourceImage:imageUrl})},2100);return}const result=await HomeworkAnalysisService.analyze(imageUrl);clearInterval(timer);showResult(result)}catch(error){clearInterval(timer);$('#loadingPanel').classList.add('hidden');$('.old-layout').classList.remove('hidden');showInputError(error.message||'Không thể phân tích bài làm.')}};
 function showResult(result){currentResult=result;$('#loadingPanel').classList.add('hidden');$('#resultPanel').classList.remove('hidden');$('#resultImage').src=imageUrl;showAnalysis(0)}
 function showAnalysis(index){currentAnalysis=currentResult.analysisSets[index];correctCount=0;practiceAttempts=[];const r=currentAnalysis;$('#topicLabel').textContent=`${r.subject.name} · ${r.knowledgePoint.name}`;$('#recommendation').textContent=r.aiRecommendation.message;const sets=currentResult.analysisSets;$('#problemNavigator').innerHTML=sets.length>1?`<div class="problem-nav"><span class="problem-nav-label">Ảnh có ${sets.length} bài cần xem lại. Chọn một bài:</span>${sets.map((item,itemIndex)=>`<button class="problem-tab ${itemIndex===index?'active':''}" data-analysis="${itemIndex}">${item.title||`Bài ${itemIndex+1}`}</button>`).join('')}</div>`:'';$$('.problem-tab').forEach(button=>button.onclick=()=>showAnalysis(Number(button.dataset.analysis)));$('#errorList').innerHTML=r.learningErrors.map(e=>`<article class="error-card"><span class="severity">Cần ôn lại</span><h3>${e.title}</h3><div class="work-compare"><div><small>BẠN ĐÃ LÀM</small><b>${e.studentWork}</b></div><div><small>CÁCH ĐÚNG</small><b>${e.correction}</b></div></div><p><b>Vị trí:</b> ${e.position}. ${e.explanation}</p><div class="tip">💡 ${e.tip}</div></article>`).join('');renderPath(r)}
