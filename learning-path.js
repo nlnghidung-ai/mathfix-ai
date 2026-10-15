@@ -1,6 +1,23 @@
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 let imageUrl='',originalImageUrl='',cropper=null,cameraStream=null,currentResult=null,currentAnalysis=null,correctCount=0,practiceAttempts=[];
 
+// Hàm tự động quét và vẽ công thức Toán học (LaTeX -> KaTeX)
+function renderMath(){
+  const run=()=>{
+    if(window.renderMathInElement){
+      window.renderMathInElement(document.body,{
+        delimiters:[
+          {left:'$$',right:'$$',display:true},
+          {left:'$',right:'$',display:false}
+        ],
+        throwOnError:false
+      });
+    }
+  };
+  run();
+  setTimeout(run, 150); // Dự phòng cho các phần tử vẽ trễ
+}
+
 function initCropper(src){
   if(cropper){ cropper.destroy(); cropper = null; }
   const preview = $('#preview');
@@ -8,18 +25,6 @@ function initCropper(src){
   cropper = new Cropper(preview, {
     viewMode: 1, autoCropArea: 0.95, responsive: true, background: false, movable: true, rotatable: true, scalable: true, zoomable: true
   });
-}
-
-function renderMath() {
-  if (window.renderMathInElement) {
-    renderMathInElement(document.body, {
-      delimiters: [
-        { left: '$$', right: '$$', display: true },
-        { left: '$', right: '$', display: false }
-      ],
-      throwOnError: false
-    });
-  }
 }
 
 function setImage(src){
@@ -123,11 +128,9 @@ $('#analyzeBtn').onclick=async()=>{
       },2100);
       return;
     }
-    // Giai đoạn 1: Chỉ đọc ảnh & tìm lỗi (rất nhanh, không bị timeout)
     const result=await HomeworkAnalysisService.analyze(imageUrl);
     clearInterval(timer);
     showResult(result);
-    // Giai đoạn 2: Gọi ngầm tạo 10 bài luyện tập
     loadPracticeInBackground(result);
   }catch(error){
     clearInterval(timer);
@@ -149,6 +152,7 @@ async function loadPracticeInBackground(result){
       if(container) {
         container.innerHTML = practiceMarkup(item.generatedExercises);
         bindPracticeEvents();
+        renderMath(); // Vẽ công thức toán trong bài tập
       }
     }
   }
@@ -174,6 +178,7 @@ function showAnalysis(index){
   $$('.problem-tab').forEach(button=>button.onclick=()=>showAnalysis(Number(button.dataset.analysis)));
   $('#errorList').innerHTML=r.learningErrors.map(e=>`<article class="error-card"><span class="severity">Cần ôn lại</span><h3>${e.title}</h3><div class="work-compare"><div><small>BẠN ĐÃ LÀM</small><b>${e.studentWork}</b></div><div><small>CÁCH ĐÚNG</small><b>${e.correction}</b></div></div><p><b>Vị trí:</b> ${e.position}. ${e.explanation}</p><div class="tip">💡 ${e.tip}</div></article>`).join('');
   renderPath(r);
+  renderMath(); // Vẽ công thức toán trong lỗi sai
 }
 
 function renderPath(r){
@@ -188,6 +193,7 @@ function renderPath(r){
   $('.next-step').onclick=()=>goStep(2);
   bindPracticeEvents();
   $('.restart').onclick=()=>location.reload();
+  renderMath();
 }
 
 function bindPracticeEvents(){
@@ -237,6 +243,7 @@ function renderReview(summary,feedback,total){
   const fallback={today:wrong.length?`Làm lại ${wrong.length} câu sai, ghi rõ từng phép tính.`:'Làm thêm 2 câu cùng dạng để duy trì kết quả tốt.',tomorrow:`Xem trước kiến thức ${currentAnalysis.knowledgePoint.name}.`,review:'Ôn lại các bước tính đã sai trước khi làm bài mới.'};
   const planner={...fallback,...(feedback.studyPlanner||{})};
   summary.innerHTML=`<b>Kết quả: ${correctCount}/${total} câu đúng</b><p>${escapeHtml(feedback.summary)}</p>${errors?`<div class="review-mistakes">${errors}</div>`:''}<section class="study-planner"><p class="planner-kicker">STUDY PLANNER</p><h4>Kế hoạch ôn tập của bạn</h4><div><b>📝 BTVN hôm nay</b><span>${escapeHtml(planner.today)}</span></div><div><b>📖 Xem trước ngày mai</b><span>${escapeHtml(planner.tomorrow)}</span></div><div><b>💡 Ôn bài cũ + lỗi còn hổng</b><span>${escapeHtml(planner.review)}</span></div></section>`;
+  renderMath(); // Vẽ công thức toán trong phần nhận xét
 }
 
 document.addEventListener('click',async event=>{
@@ -258,4 +265,5 @@ function goStep(step){
   current.classList.remove('active');
   next.classList.add('active');
   $$('.path-progress i').forEach((item,index)=>item.classList.toggle('active',index<step));
+  renderMath();
 }
