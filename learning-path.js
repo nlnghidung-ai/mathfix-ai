@@ -2,12 +2,12 @@ const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 let imageUrl='',originalImageUrl='',cropper=null,cameraStream=null,currentResult=null,currentAnalysis=null,correctCount=0,practiceAttempts=[];
 let currentTranscribed=null;
 
-// Hàm lọc sạch ký tự $ và định dạng công thức toán tự nhiên
+// HÀM QUÉT SẠCH 100% CÁC DẤU $ VÀ CÁC CÚ PHÁP LATEX
 function cleanMath(str){
   if(!str) return '';
   return String(str)
-    .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1/$2)')
-    .replace(/\\sqrt\{([^}]+)\}/g, '√($1)')
+    .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1/$2)') // \frac{a}{b} -> (a/b)
+    .replace(/\\sqrt\{([^}]+)\}/g, '√($1)')             // \sqrt{x} -> √(x)
     .replace(/\\times/g, '×')
     .replace(/\\div/g, '÷')
     .replace(/\\pm/g, '±')
@@ -15,10 +15,10 @@ function cleanMath(str){
     .replace(/\\le/g, '≤')
     .replace(/\\ge/g, '≥')
     .replace(/\\cdot/g, '·')
-    .replace(/\^\{([^}]+)\}/g, '^$1')
-    .replace(/_\{([^}]+)\}/g, '_$1')
-    .replace(/\$/g, '')
-    .replace(/\\/g, '')
+    .replace(/\^\{([^}]+)\}/g, '^$1')                   // ^{12} -> ^12
+    .replace(/_\{([^}]+)\}/g, '_$1')                    // _{k} -> _k
+    .replace(/\$/g, '')                                  // XÓA SẠCH MỌI DẤU $
+    .replace(/\\/g, '')                                  // Xóa các dấu gạch chéo ngược thừa
     .trim();
 }
 
@@ -111,7 +111,7 @@ $('#captureBtn').onclick=()=>{
   $('#cameraMode').classList.add('hidden');
 };
 
-// BƯỚC 1: BẤM NÚT QUÉT NỘI DUNG ẢNH
+// BƯỚC 1: BẤM NÚT QUÉT NỘI DUNG ẢNH (GIAO DIỆN KIỂM TRA ĐỐI CHIẾU SẼ HIỆN RA)
 $('#analyzeBtn').onclick=async()=>{
   if(cropper){
     const canvas = cropper.getCroppedCanvas({ maxWidth: 2048, maxHeight: 2048 });
@@ -129,10 +129,11 @@ $('#analyzeBtn').onclick=async()=>{
     const scanRes = await HomeworkAnalysisService.scan(imageUrl);
     currentTranscribed = scanRes;
     
-    // Đổ nội dung quét được vào màn hình đối chiếu
+    // Đổ nội dung quét được vào màn hình đối chiếu (đã lọc sạch dấu $)
     $('#scannedProblem').textContent = cleanMath(scanRes.problemText || 'Không phát hiện rõ phần đề bài.');
     $('#scannedStudentWork').textContent = cleanMath(scanRes.studentWorkText || 'Không phát hiện rõ bước giải của học sinh.');
     
+    // ẨN LOADING VÀ HIỂN THỊ MÀN HÌNH ĐỐI CHIẾU
     $('#loadingPanel').classList.add('hidden');
     $('#confirmPanel').classList.remove('hidden');
   } catch(error) {
@@ -142,7 +143,7 @@ $('#analyzeBtn').onclick=async()=>{
   }
 };
 
-// BƯỚC 2A: NGƯỜI DÙNG THẤY SAI -> BẤM "CHƯA ĐÚNG, CHỤP LẠI"
+// BƯỚC 2A: NGƯỜI DÙNG BẤM "CHƯA ĐÚNG, CHỤP LẠI"
 $('#rejectBtn').onclick=()=>{
   $('#confirmPanel').classList.add('hidden');
   $('.old-layout').classList.remove('hidden');
@@ -175,7 +176,7 @@ async function loadPracticeInBackground(result){
     const res = await HomeworkAnalysisService.generateExercises(item.knowledgePoint.name, item.learningErrors);
     const levels=[...Array(8).fill('Cơ bản'),...Array(2).fill('Nâng cao')];
     item.generatedExercises = (res.exercises || []).slice(0, 10).map((ex, idx)=>({
-      level: levels[idx] || 'Cơ bản', question: ex.question, answer: String(ex.answer)
+      level: levels[idx] || 'Cơ bản', question: cleanMath(ex.question), answer: cleanMath(String(ex.answer))
     }));
     if(currentAnalysis && currentAnalysis.title === item.title){
       const container = $('#practiceBox');
@@ -206,6 +207,7 @@ function showAnalysis(index){
   $('#problemNavigator').innerHTML=sets.length>1?`<div class="problem-nav"><span class="problem-nav-label">Ảnh có ${sets.length} bài cần xem lại. Chọn một bài:</span>${sets.map((item,itemIndex)=>`<button class="problem-tab ${itemIndex===index?'active':''}" data-analysis="${itemIndex}">${cleanMath(item.title||`Bài ${itemIndex+1}`)}</button>`).join('')}</div>`:'';
   $$('.problem-tab').forEach(button=>button.onclick=()=>showAnalysis(Number(button.dataset.analysis)));
   
+  // TẤT CẢ NỘI DUNG LỖI SAI ĐỀU ĐƯỢC LÀM SẠCH BẰNG CLEANMATH()
   $('#errorList').innerHTML=r.learningErrors.map(e=>`<article class="error-card"><span class="severity">Cần ôn lại</span><h3>${cleanMath(e.title)}</h3><div class="work-compare"><div><small>BẠN ĐÃ LÀM</small><b>${cleanMath(e.studentWork)}</b></div><div><small>CÁCH ĐÚNG</small><b>${cleanMath(e.correction)}</b></div></div><p><b>Vị trí:</b> ${cleanMath(e.position)}. ${cleanMath(e.explanation)}</p><div class="tip">💡 ${cleanMath(e.tip)}</div></article>`).join('');
   renderPath(r);
 }
