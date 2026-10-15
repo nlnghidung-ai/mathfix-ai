@@ -2,21 +2,11 @@ const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 let imageUrl='',originalImageUrl='',cropper=null,cameraStream=null,currentResult=null,currentAnalysis=null,correctCount=0,practiceAttempts=[];
 let currentTranscribed=null;
 
-// HÀM VẼ CÔNG THỨC TOÁN HỌC CHUẨN MỰC (QUÉT KÉP TỰ ĐỘNG)
+// BỘ VẼ CÔNG THỨC TOÁN HỌC THÔNG MINH (QUÉT VÀ VẼ 100%)
 function renderMath(target){
   const el = target || document.body;
   const run = () => {
-    if (typeof window.renderMathInElement === 'function') {
-      try {
-        window.renderMathInElement(el, {
-          delimiters: [
-            { left: '$$', right: '$$', display: true },
-            { left: '$', right: '$', display: false }
-          ],
-          throwOnError: false
-        });
-      } catch (e) {}
-    }
+    // 1. Tự động nhận diện và vẽ các công thức kẹp giữa $...$ hoặc $$...$$
     if (typeof window.katex !== 'undefined') {
       try {
         const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
@@ -24,30 +14,48 @@ function renderMath(target){
         while (walker.nextNode()) {
           const parent = walker.currentNode.parentNode;
           if (parent && !['SCRIPT', 'STYLE', 'TEXTAREA', 'PRE', 'CODE'].includes(parent.tagName) && !parent.closest('.katex')) {
-            if (/\$([^$]+)\$/.test(walker.currentNode.nodeValue)) {
+            const val = walker.currentNode.nodeValue;
+            // Bắt các chuỗi có chứa $...$, hoặc các lệnh LaTeX \frac, \sqrt, lũy thừa ^{...}
+            if (val && (/\$([^$]+)\$/.test(val) || /\\(frac|sqrt|times|div|pm)/.test(val) || /\b[a-zA-Z0-9]\^\{?[0-9a-zA-Z+-]+\}?/.test(val))) {
               textNodes.push(walker.currentNode);
             }
           }
         }
+
         textNodes.forEach(node => {
-          const text = node.nodeValue;
-          if (!text || !text.includes('$')) return;
-          const span = document.createElement('span');
-          span.innerHTML = text.replace(/\$([^$]+)\$/g, (_, math) => {
-            try {
-              return window.katex.renderToString(math.trim(), { displayMode: false, throwOnError: false });
-            } catch {
-              return `$${math}$`;
-            }
+          let text = node.nodeValue;
+          if (!text) return;
+
+          // Nếu có dạng LaTeX \frac hoặc \sqrt đứng độc lập không có $, tự động bọc $ lại
+          text = text.replace(/(\\(?:frac\{[^}]+\}\{[^}]+\}|sqrt\{[^}]+\}|sqrt\[\d+\]\{[^}]+\}))/g, '$$$1$$');
+
+          // Vẽ công thức kẹp giữa $$...$$
+          let html = text.replace(/\$\$([^$]+)\$\$/g, (_, math) => {
+            try { return window.katex.renderToString(math.trim(), { displayMode: true, throwOnError: false }); }
+            catch { return `$$${math}$$`; }
           });
-          node.parentNode?.replaceChild(span, node);
+
+          // Vẽ công thức kẹp giữa $...$ (chấp nhận cả khoảng trắng)
+          html = html.replace(/\$([^$]+)\$/g, (_, math) => {
+            try { return window.katex.renderToString(math.trim(), { displayMode: false, throwOnError: false }); }
+            catch { return `$${math}$`; }
+          });
+
+          if (html !== node.nodeValue) {
+            const span = document.createElement('span');
+            span.innerHTML = html;
+            node.parentNode?.replaceChild(span, node);
+          }
         });
-      } catch (e) {}
+      } catch (err) {
+        console.warn('Lỗi renderMath:', err);
+      }
     }
   };
 
   run();
   setTimeout(run, 150);
+  setTimeout(run, 400);
 }
 
 function initCropper(src){
@@ -221,7 +229,6 @@ $('#btnProceedAnalyze').onclick=async()=>{
     showResult(result);
     loadPracticeInBackground(result);
 
-    // [TỰ ĐỘNG LƯU VÀO DATABASE]: Lưu bài phân tích nếu học sinh đã đăng nhập
     if (window.MathFixAuth?.saveAnalysis) {
       window.MathFixAuth.saveAnalysis(currentTranscribed, result);
     }
@@ -272,6 +279,7 @@ function showAnalysis(index){
   $('#problemNavigator').innerHTML=sets.length>1?`<div class="problem-nav"><span class="problem-nav-label">Ảnh có ${sets.length} bài cần xem lại. Chọn một bài:</span>${sets.map((item,itemIndex)=>`<button class="problem-tab ${itemIndex===index?'active':''}" data-analysis="${itemIndex}">${item.title||`Bài ${itemIndex+1}`}</button>`).join('')}</div>`:'';
   $$('.problem-tab').forEach(button=>button.onclick=()=>showAnalysis(Number(button.dataset.analysis)));
   
+  // HIỂN THỊ CÁC THẺ LỖI
   $('#errorList').innerHTML=r.learningErrors.map((e, errIdx)=>`
     <article class="error-card" id="error-card-${errIdx}">
       <span class="severity">Cần ôn lại</span>
@@ -294,6 +302,7 @@ function showAnalysis(index){
   renderMath($('#resultPanel'));
 }
 
+// BƯỚC XỬ LÝ SỰ KIỆN: KHI HỌC SINH BẤM "AI CHỈ SAI RỒI"
 function bindRecheckEvents(){
   $$('.btn-recheck-step').forEach(btn => {
     btn.onclick = async () => {
@@ -377,6 +386,7 @@ function checkAnswer(event){
   practiceAttempts.push({question:`${questionNumber} ${questionText}`.trim(),level:box.dataset.level,submittedAnswer:input.value.trim(),correctAnswer:box.dataset.answer,isCorrect:ok});
   if(ok)correctCount++;
   if($$('.practice-question[data-done="yes"]').length===currentAnalysis.generatedExercises.length)$('#finishPractice').disabled=false;
+  renderMath(note);
 }
 
 const escapeHtml=value=>String(value||'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
@@ -409,7 +419,6 @@ document.addEventListener('click',async event=>{
       const feedback=window.LEARNING_DEMO_MODE?demoReview():await HomeworkAnalysisService.reviewPractice({topic:currentAnalysis.knowledgePoint.name,detectedErrors:currentAnalysis.learningErrors,attempts:practiceAttempts});
       renderReview(summary,feedback,total);
 
-      // [TỰ ĐỘNG LƯU VÀO DATABASE]: Lưu kết quả bài tập nếu học sinh đã đăng nhập
       if (window.MathFixAuth?.savePractice) {
         window.MathFixAuth.savePractice(currentAnalysis.knowledgePoint.name, correctCount, total, practiceAttempts);
       }
