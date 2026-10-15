@@ -1,23 +1,56 @@
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 let imageUrl='',originalImageUrl='',cropper=null,cameraStream=null,currentResult=null,currentAnalysis=null,correctCount=0,practiceAttempts=[];
 
-// Hàm tự động quét và vẽ công thức Toán học (LaTeX -> KaTeX)
+// Hàm tự động quét và vẽ công thức Toán học (2 lớp bảo vệ)
 function renderMath(){
   const run=()=>{
-    if(window.renderMathInElement){
-      window.renderMathInElement(document.body,{
-        delimiters:[
-          {left:'$$',right:'$$',display:true},
-          {left:'$',right:'$',display:false}
-        ],
-        throwOnError:false
-      });
+    // Lớp 1: Gọi auto-render chính thức của KaTeX
+    if(typeof window.renderMathInElement==='function'){
+      try{
+        window.renderMathInElement(document.body,{
+          delimiters:[
+            {left:'$$',right:'$$',display:true},
+            {left:'$',right:'$',display:false}
+          ],
+          throwOnError:false
+        });
+      }catch(e){}
+    }
+    
+    // Lớp 2 (Bảo vệ tuyệt đối): Tự quét các đoạn văn bản còn sót dấu $...$ và ép dịch sang KaTeX
+    if(typeof window.katex!=='undefined'){
+      try{
+        const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+        const nodes=[];
+        while(walker.nextNode()){
+          const p=walker.currentNode.parentNode;
+          if(p&&!['SCRIPT','STYLE','TEXTAREA','PRE','CODE'].includes(p.tagName)&&!p.closest('.katex')){
+            if(/\$([^$]+)\$/.test(walker.currentNode.nodeValue)){
+              nodes.push(walker.currentNode);
+            }
+          }
+        }
+        nodes.forEach(node=>{
+          const text=node.nodeValue;
+          if(!text||!text.includes('$'))return;
+          const span=document.createElement('span');
+          let html=text.replace(/\$\$([^$]+)\$\$/g,(_,tex)=>{
+            try{return window.katex.renderToString(tex,{displayMode:true,throwOnError:false})}catch{return `$$${tex}$$`}
+          });
+          html=html.replace(/\$([^$]+)\$/g,(_,tex)=>{
+            try{return window.katex.renderToString(tex,{displayMode:false,throwOnError:false})}catch{return `$${tex}$`}
+          });
+          span.innerHTML=html;
+          node.parentNode?.replaceChild(span,node);
+        });
+      }catch(e){}
     }
   };
-  run();
-  setTimeout(run, 150); // Dự phòng cho các phần tử vẽ trễ
-}
 
+  run();
+  setTimeout(run,150);
+  setTimeout(run,450);
+}
 function initCropper(src){
   if(cropper){ cropper.destroy(); cropper = null; }
   const preview = $('#preview');
