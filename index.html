@@ -5,22 +5,204 @@
   <title>MATHFIX AI — Học đúng chỗ, tiến bộ mỗi ngày</title>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <style>
+    /* CSS cho nút Đăng nhập Google trên Header trang chủ */
+    .btn-google-nav {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #ffffff;
+      color: #374151;
+      border: 1px solid #d1d5db;
+      padding: 7px 16px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .btn-google-nav:hover {
+      background: #f9fafb;
+      border-color: #9ca3af;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .btn-google-nav svg {
+      flex-shrink: 0;
+    }
+    /* Khi đã đăng nhập */
+    .user-home-nav {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .user-home-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #f1f5f9;
+      padding: 4px 14px 4px 6px;
+      border-radius: 999px;
+      border: 1px solid #e2e8f0;
+      color: #1e293b;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .user-home-pill:hover {
+      background: #e2e8f0;
+    }
+    .user-home-avatar {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+  </style>
 </head>
 <body class="mathfix-home">
-  <nav class="nav wrap"><a class="brand" href="index.html"><b>✦</b> MATHFIX <span>AI</span></a><div class="nav-pill">● Trợ lý học Toán</div><a class="btn small" href="dashboard.html">Bắt đầu ngay <span>↗</span></a></nav>
+  <nav class="nav wrap">
+    <a class="brand" href="index.html"><b>✦</b> MATHFIX <span>AI</span></a>
+    <div class="nav-pill">● Trợ lý học Toán</div>
+    
+    <!-- KHU VỰC THAY THẾ NÚT "BẮT ĐẦU NGAY" BẰNG NÚT ĐĂNG NHẬP GOOGLE -->
+    <div id="homeAuthArea">
+      <button id="btnHomeGoogleLogin" class="btn-google-nav" type="button">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.04h3.88c2.27-2.09 3.665-5.17 3.665-9.14z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.04c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.13C3.26 21.43 7.33 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.28c-.25-.72-.38-1.49-.38-2.28s.13-1.56.38-2.28V6.59H1.25C.45 8.24 0 10.07 0 12s.45 3.76 1.25 5.41l4.03-3.13z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.57 1.25 6.59l4.03 3.13c.95-2.83 3.6-4.97 6.72-4.97z"/></svg>
+        Đăng nhập Google
+      </button>
+    </div>
+  </nav>
+
   <main>
     <section class="hero wrap">
-      <div class="hero-copy"><p class="eyebrow">MATHFIX AI · HỌC THÔNG MINH HƠN</p><h1>Học đúng chỗ –<br><em>Tiến bộ mỗi ngày.</em></h1><p class="lead">Chụp bài làm để MATHFIX AI đọc từng bước, phát hiện chỗ sai và tạo bài luyện phù hợp dành riêng cho bạn.</p><div class="hero-actions"><a class="btn" href="dashboard.html">✨ Phân tích bài làm</a><a class="text-link" href="#how-it-works">Xem cách hoạt động <span>↓</span></a></div><div class="trust-row"><span>✓ Phân tích từng bước</span><span>✓ 10 bài luyện riêng</span><span>✓ Dễ hiểu, không áp lực</span></div></div>
+      <div class="hero-copy">
+        <p class="eyebrow">MATHFIX AI · HỌC THÔNG MINH HƠN</p>
+        <h1>Học đúng chỗ –<br><em>Tiến bộ mỗi ngày.</em></h1>
+        <p class="lead">Chụp bài làm để MATHFIX AI đọc từng bước, phát hiện chỗ sai và tạo bài luyện phù hợp dành riêng cho bạn.</p>
+        <div class="hero-actions">
+          <a class="btn" href="dashboard.html">✨ Phân tích bài làm</a>
+          <a class="text-link" href="#how-it-works">Xem cách hoạt động <span>↓</span></a>
+        </div>
+        <div class="trust-row">
+          <span>✓ Phân tích từng bước</span>
+          <span>✓ 4 bài luyện riêng</span>
+          <span>✓ Dễ hiểu, không áp lực</span>
+        </div>
+      </div>
       <div class="hero-visual" aria-label="Minh họa MATHFIX AI">
         <div class="orb orb-one"></div><div class="orb orb-two"></div><div class="grid-dots"></div>
-        <div class="visual-tag tag-top">⚡ Nhận diện lỗi sai</div><div class="visual-tag tag-bottom">+10 bài luyện phù hợp</div>
-        <article class="solve-card"><div class="solve-head"><span>MF</span><div><small>MATHFIX AI</small><b>Đang phân tích bài làm</b></div><i>✓</i></div><div class="formula-line"><span>2x + 5 = 17</span><b>→ x = 6</b></div><div class="mini-progress"><i></i><i></i><i></i></div><p>Đã tìm thấy <strong>2 điểm cần ôn</strong></p></article>
+        <div class="visual-tag tag-top">⚡ Nhận diện lỗi sai</div>
+        <div class="visual-tag tag-bottom">+4 bài luyện phù hợp</div>
+        <article class="solve-card">
+          <div class="solve-head">
+            <span>MF</span>
+            <div><small>MATHFIX AI</small><b>Đang phân tích bài làm</b></div>
+            <i>✓</i>
+          </div>
+          <div class="formula-line"><span>2x + 5 = 17</span><b>→ x = 6</b></div>
+          <div class="mini-progress"><i></i><i></i><i></i></div>
+          <p>Đã tìm thấy <strong>điểm cần ôn</strong></p>
+        </article>
         <div class="robot-face"><i></i><i></i><b>⌣</b></div>
       </div>
     </section>
-    <section id="how-it-works" class="how-section"><div class="wrap"><div class="section-heading"><div><p class="eyebrow">3 BƯỚC ĐƠN GIẢN</p><h2>Ôn đúng phần <em>mình cần</em></h2></div><p>Không cần đoán mình yếu chỗ nào.<br>AI cùng bạn tìm ra.</p></div><div class="steps"><article><span class="step-number">01</span><div class="step-icon">▣</div><h3>Chụp bài làm</h3><p>Tải ảnh hoặc dùng camera để đưa bài làm vào hệ thống.</p><i class="step-arrow">→</i></article><article><span class="step-number">02</span><div class="step-icon">✦</div><h3>AI phát hiện lỗi</h3><p>Chỉ ra bước cần xem lại bằng lời giải thích dễ hiểu.</p><i class="step-arrow">→</i></article><article><span class="step-number">03</span><div class="step-icon">↗</div><h3>Nhận lộ trình riêng</h3><p>Học lại kiến thức, luyện tập và kiểm tra tiến bộ.</p></article></div></div></section>
-    <section class="wrap subject-showcase"><div class="subject-intro"><p class="eyebrow">HỌC ĐÚNG NỀN TẢNG</p><h2>Chương trình THCS,<br><em>không học lan man.</em></h2><p>Kho kiến thức được sắp xếp theo từng lớp và chủ đề để AI hiểu đúng dạng toán của bạn.</p><a class="text-link" href="dashboard.html">Thử MATHFIX AI <span>→</span></a></div><div class="subject-cards"><article class="math"><span>∑</span><b>Toán học</b><small>Đang hỗ trợ</small><i>→</i></article><article class="english"><span>Aa</span><b>Tiếng Anh</b><small>Sắp ra mắt</small></article><article class="literature"><span>✎</span><b>Ngữ văn</b><small>Sắp ra mắt</small></article></div></section>
+
+    <section id="how-it-works" class="how-section">
+      <div class="wrap">
+        <div class="section-heading">
+          <div><p class="eyebrow">3 BƯỚC ĐƠN GIẢN</p><h2>Ôn đúng phần <em>mình cần</em></h2></div>
+          <p>Không cần đoán mình yếu chỗ nào.<br>AI cùng bạn tìm ra.</p>
+        </div>
+        <div class="steps">
+          <article>
+            <span class="step-number">01</span>
+            <div class="step-icon">▣</div>
+            <h3>Chụp bài làm</h3>
+            <p>Tải ảnh hoặc dùng camera để đưa bài làm vào hệ thống.</p>
+            <i class="step-arrow">→</i>
+          </article>
+          <article>
+            <span class="step-number">02</span>
+            <div class="step-icon">✦</div>
+            <h3>AI phát hiện lỗi</h3>
+            <p>Chỉ ra bước cần xem lại bằng lời giải thích dễ hiểu.</p>
+            <i class="step-arrow">→</i>
+          </article>
+          <article>
+            <span class="step-number">03</span>
+            <div class="step-icon">↗</div>
+            <h3>Nhận lộ trình riêng</h3>
+            <p>Học lại kiến thức, luyện tập và kiểm tra tiến bộ.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap subject-showcase">
+      <div class="subject-intro">
+        <p class="eyebrow">HỌC ĐÚNG NỀN TẢNG</p>
+        <h2>Chương trình THCS,<br><em>không học lan man.</em></h2>
+        <p>Kho kiến thức được sắp xếp theo từng lớp và chủ đề để AI hiểu đúng dạng toán của bạn.</p>
+        <a class="text-link" href="dashboard.html">Thử MATHFIX AI <span>→</span></a>
+      </div>
+      <div class="subject-cards">
+        <article class="math"><span>∑</span><b>Toán học</b><small>Đang hỗ trợ</small><i>→</i></article>
+        <article class="english"><span>Aa</span><b>Tiếng Anh</b><small>Sắp ra mắt</small></article>
+        <article class="literature"><span>✎</span><b>Ngữ văn</b><small>Sắp ra mắt</small></article>
+      </div>
+    </section>
   </main>
-  <footer class="wrap mathfix-footer"><a class="brand" href="index.html"><b>✦</b> MATHFIX <span>AI</span></a><p>Học đúng cách · Tiến bộ mỗi ngày</p></footer>
+
+  <footer class="wrap mathfix-footer">
+    <a class="brand" href="index.html"><b>✦</b> MATHFIX <span>AI</span></a>
+    <p>Học đúng cách · Tiến bộ mỗi ngày</p>
+  </footer>
+
+  <!-- Thư viện Supabase JS để kiểm tra trạng thái đăng nhập -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Nhúng auth.js đã có sẵn cấu hình Supabase của bạn -->
+  <script src="auth.js?v=2"></script>
+  <script>
+    // Logic riêng cho thanh menu trang chủ (index.html)
+    document.addEventListener('DOMContentLoaded', async () => {
+      const container = document.getElementById('homeAuthArea');
+      if (!container || !supabaseClient) return;
+
+      // Kiểm tra xem đã đăng nhập chưa
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      const user = session?.user;
+
+      if (user) {
+        // Đã đăng nhập: Hiện Avatar + Tên + Bấm vào chuyển tới dashboard
+        const name = user.user_metadata?.full_name || user.email.split('@')[0];
+        const avatar = user.user_metadata?.avatar_url || 'https://www.gravatar.com/avatar/?d=mp';
+        container.innerHTML = `
+          <a href="dashboard.html" class="user-home-nav" title="Vào không gian học tập">
+            <div class="user-home-pill">
+              <img src="${avatar}" alt="Avatar" class="user-home-avatar" referrerpolicy="no-referrer">
+              <span>${name} ↗</span>
+            </div>
+          </a>
+        `;
+      } else {
+        // Chưa đăng nhập: Gán sự kiện bấm vào nút Đăng nhập Google
+        const loginBtn = document.getElementById('btnHomeGoogleLogin');
+        if (loginBtn) {
+          loginBtn.onclick = () => {
+            supabaseClient.auth.signInWithOAuth({
+              provider: 'google',
+              options: {
+                redirectTo: window.location.origin + '/dashboard.html'
+              }
+            });
+          };
+        }
+      }
+    });
+  </script>
 </body>
 </html>
