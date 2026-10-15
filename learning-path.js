@@ -1,26 +1,5 @@
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 let imageUrl='',originalImageUrl='',cropper=null,cameraStream=null,currentResult=null,currentAnalysis=null,correctCount=0,practiceAttempts=[];
-let currentTranscribed=null;
-
-// HÀM QUÉT SẠCH 100% CÁC DẤU $ VÀ CÁC CÚ PHÁP LATEX
-function cleanMath(str){
-  if(!str) return '';
-  return String(str)
-    .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1/$2)') // \frac{a}{b} -> (a/b)
-    .replace(/\\sqrt\{([^}]+)\}/g, '√($1)')             // \sqrt{x} -> √(x)
-    .replace(/\\times/g, '×')
-    .replace(/\\div/g, '÷')
-    .replace(/\\pm/g, '±')
-    .replace(/\\neq/g, '≠')
-    .replace(/\\le/g, '≤')
-    .replace(/\\ge/g, '≥')
-    .replace(/\\cdot/g, '·')
-    .replace(/\^\{([^}]+)\}/g, '^$1')                   // ^{12} -> ^12
-    .replace(/_\{([^}]+)\}/g, '_$1')                    // _{k} -> _k
-    .replace(/\$/g, '')                                  // XÓA SẠCH MỌI DẤU $
-    .replace(/\\/g, '')                                  // Xóa các dấu gạch chéo ngược thừa
-    .trim();
-}
 
 function initCropper(src){
   if(cropper){ cropper.destroy(); cropper = null; }
@@ -38,7 +17,6 @@ function setImage(src){
   $('#previewContainer').classList.remove('hidden');
   $('#analyzeBtn').disabled = false;
   $('#uploadError').classList.add('hidden');
-  $('#retakeNotice').classList.add('hidden');
   initCropper(src);
 }
 
@@ -111,7 +89,6 @@ $('#captureBtn').onclick=()=>{
   $('#cameraMode').classList.add('hidden');
 };
 
-// BƯỚC 1: BẤM NÚT QUÉT NỘI DUNG ẢNH (GIAO DIỆN KIỂM TRA ĐỐI CHIẾU SẼ HIỆN RA)
 $('#analyzeBtn').onclick=async()=>{
   if(cropper){
     const canvas = cropper.getCroppedCanvas({ maxWidth: 2048, maxHeight: 2048 });
@@ -120,54 +97,31 @@ $('#analyzeBtn').onclick=async()=>{
   if(!imageUrl)return;
   
   $('.old-layout').classList.add('hidden');
-  $('#confirmPanel').classList.add('hidden');
   $('#loadingPanel').classList.remove('hidden');
-  $('#loadingText').textContent = 'Đang đọc chữ trong ảnh…';
-  $('#loadingSubtext').textContent = 'AI đang nhận diện đề bài và các bước giải của bạn.';
-
-  try {
-    const scanRes = await HomeworkAnalysisService.scan(imageUrl);
-    currentTranscribed = scanRes;
-    
-    // Đổ nội dung quét được vào màn hình đối chiếu (đã lọc sạch dấu $)
-    $('#scannedProblem').textContent = cleanMath(scanRes.problemText || 'Không phát hiện rõ phần đề bài.');
-    $('#scannedStudentWork').textContent = cleanMath(scanRes.studentWorkText || 'Không phát hiện rõ bước giải của học sinh.');
-    
-    // ẨN LOADING VÀ HIỂN THỊ MÀN HÌNH ĐỐI CHIẾU
-    $('#loadingPanel').classList.add('hidden');
-    $('#confirmPanel').classList.remove('hidden');
-  } catch(error) {
+  const demo=window.LEARNING_DEMO_MODE===true;
+  const messages=demo?['Đang đọc nội dung bài làm…','Đang xác định kiến thức và lỗi sai…']:['Đang gửi ảnh đến AI…','AI đang đọc toàn bộ bài trong ảnh…','AI đang kiểm tra phép tính và tìm lỗi…'];
+  let i=0;
+  $('#loadingText').textContent=messages[i];
+  const timer=setInterval(()=>{$('#loadingText').textContent=messages[Math.min(++i,messages.length-1)]},1200);
+  try{
+    if(demo){
+      setTimeout(()=>{
+        clearInterval(timer);
+        showResult({analysisSets:[MockAnalysisService.analyze(imageUrl)],sourceImage:imageUrl});
+      },2100);
+      return;
+    }
+    // Giai đoạn 1: Chỉ đọc ảnh & tìm lỗi (rất nhanh, không bị timeout)
+    const result=await HomeworkAnalysisService.analyze(imageUrl);
+    clearInterval(timer);
+    showResult(result);
+    // Giai đoạn 2: Gọi ngầm tạo 10 bài luyện tập
+    loadPracticeInBackground(result);
+  }catch(error){
+    clearInterval(timer);
     $('#loadingPanel').classList.add('hidden');
     $('.old-layout').classList.remove('hidden');
-    showInputError(error.message || 'Không thể đọc nội dung bài làm.');
-  }
-};
-
-// BƯỚC 2A: NGƯỜI DÙNG BẤM "CHƯA ĐÚNG, CHỤP LẠI"
-$('#rejectBtn').onclick=()=>{
-  $('#confirmPanel').classList.add('hidden');
-  $('.old-layout').classList.remove('hidden');
-  // Hiện khung nhắc nhở màu vàng nổi bật
-  $('#retakeNotice').classList.remove('hidden');
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-};
-
-// BƯỚC 2B: NGƯỜI DÙNG XÁC NHẬN "ĐÚNG RỒI, PHÂN TÍCH TIẾP"
-$('#confirmBtn').onclick=async()=>{
-  $('#confirmPanel').classList.add('hidden');
-  $('#loadingPanel').classList.remove('hidden');
-  $('#loadingText').textContent = 'Đang phân tích lỗi sai…';
-  $('#loadingSubtext').textContent = 'AI đang đối chiếu cách giải đúng và tìm chỗ cần ôn tập.';
-
-  try {
-    const result = await HomeworkAnalysisService.analyze(imageUrl, currentTranscribed);
-    $('#loadingPanel').classList.add('hidden');
-    showResult(result);
-    loadPracticeInBackground(result);
-  } catch(error) {
-    $('#loadingPanel').classList.add('hidden');
-    $('#confirmPanel').classList.remove('hidden');
-    alert(error.message || 'Có lỗi xảy ra khi phân tích bài làm.');
+    showInputError(error.message||'Không thể phân tích bài làm.');
   }
 };
 
@@ -176,7 +130,7 @@ async function loadPracticeInBackground(result){
     const res = await HomeworkAnalysisService.generateExercises(item.knowledgePoint.name, item.learningErrors);
     const levels=[...Array(8).fill('Cơ bản'),...Array(2).fill('Nâng cao')];
     item.generatedExercises = (res.exercises || []).slice(0, 10).map((ex, idx)=>({
-      level: levels[idx] || 'Cơ bản', question: cleanMath(ex.question), answer: cleanMath(String(ex.answer))
+      level: levels[idx] || 'Cơ bản', question: ex.question, answer: String(ex.answer)
     }));
     if(currentAnalysis && currentAnalysis.title === item.title){
       const container = $('#practiceBox');
@@ -201,23 +155,21 @@ function showAnalysis(index){
   correctCount=0;
   practiceAttempts=[];
   const r=currentAnalysis;
-  $('#topicLabel').textContent=`${cleanMath(r.subject.name)} · ${cleanMath(r.knowledgePoint.name)}`;
-  $('#recommendation').textContent=cleanMath(r.aiRecommendation.message);
+  $('#topicLabel').textContent=`${r.subject.name} · ${r.knowledgePoint.name}`;
+  $('#recommendation').textContent=r.aiRecommendation.message;
   const sets=currentResult.analysisSets;
-  $('#problemNavigator').innerHTML=sets.length>1?`<div class="problem-nav"><span class="problem-nav-label">Ảnh có ${sets.length} bài cần xem lại. Chọn một bài:</span>${sets.map((item,itemIndex)=>`<button class="problem-tab ${itemIndex===index?'active':''}" data-analysis="${itemIndex}">${cleanMath(item.title||`Bài ${itemIndex+1}`)}</button>`).join('')}</div>`:'';
+  $('#problemNavigator').innerHTML=sets.length>1?`<div class="problem-nav"><span class="problem-nav-label">Ảnh có ${sets.length} bài cần xem lại. Chọn một bài:</span>${sets.map((item,itemIndex)=>`<button class="problem-tab ${itemIndex===index?'active':''}" data-analysis="${itemIndex}">${item.title||`Bài ${itemIndex+1}`}</button>`).join('')}</div>`:'';
   $$('.problem-tab').forEach(button=>button.onclick=()=>showAnalysis(Number(button.dataset.analysis)));
-  
-  // TẤT CẢ NỘI DUNG LỖI SAI ĐỀU ĐƯỢC LÀM SẠCH BẰNG CLEANMATH()
-  $('#errorList').innerHTML=r.learningErrors.map(e=>`<article class="error-card"><span class="severity">Cần ôn lại</span><h3>${cleanMath(e.title)}</h3><div class="work-compare"><div><small>BẠN ĐÃ LÀM</small><b>${cleanMath(e.studentWork)}</b></div><div><small>CÁCH ĐÚNG</small><b>${cleanMath(e.correction)}</b></div></div><p><b>Vị trí:</b> ${cleanMath(e.position)}. ${cleanMath(e.explanation)}</p><div class="tip">💡 ${cleanMath(e.tip)}</div></article>`).join('');
+  $('#errorList').innerHTML=r.learningErrors.map(e=>`<article class="error-card"><span class="severity">Cần ôn lại</span><h3>${e.title}</h3><div class="work-compare"><div><small>BẠN ĐÃ LÀM</small><b>${e.studentWork}</b></div><div><small>CÁCH ĐÚNG</small><b>${e.correction}</b></div></div><p><b>Vị trí:</b> ${e.position}. ${e.explanation}</p><div class="tip">💡 ${e.tip}</div></article>`).join('');
   renderPath(r);
 }
 
 function renderPath(r){
   $('#pathSteps').innerHTML=r.learningPath.map((s,i)=>`<article class="path-step ${i?'':'active'}" data-step="${s.step}">
     <p class="step-tag">BƯỚC ${s.step}</p>
-    <h3>${cleanMath(s.title)}</h3>
-    <p>${cleanMath(s.goal)}</p>
-    ${i===0?`<a class="resource" target="_blank" rel="noopener" href="${r.learningResources[0].url}">▶ ${cleanMath(r.learningResources[0].title)}</a><button class="btn next-step">Đã học lý thuyết →</button>`:''}
+    <h3>${s.title}</h3>
+    <p>${s.goal}</p>
+    ${i===0?`<a class="resource" target="_blank" rel="noopener" href="${r.learningResources[0].url}">▶ ${r.learningResources[0].title}</a><button class="btn next-step">Đã học lý thuyết →</button>`:''}
     ${i===1?`<div id="practiceBox">${r.generatedExercises?.length ? practiceMarkup(r.generatedExercises) : '<div class="ai-created">✨ AI đang tạo 10 bài luyện tập phù hợp từ lỗi của bạn...</div>'}</div>`:''}
     ${i===2?`<div id="practiceSummary" class="summary-card">Hoàn thành các bài luyện để nhận xét kết quả.</div><button class="btn restart">Tạo phân tích mới</button>`:''}
   </article>`).join('');
@@ -233,7 +185,7 @@ function bindPracticeEvents(){
 function practiceMarkup(items){
   const levels=['Cơ bản','Nâng cao'],classes={'Cơ bản':'basic','Nâng cao':'advanced'};
   let number=0;
-  return `<div class="ai-created">✨ AI đã tạo 10 bài: 8 câu cơ bản và 2 câu nâng cao từ lỗi vừa phát hiện.</div>${levels.map(level=>({level,items:items.filter(x=>x.level===level)})).filter(group=>group.items.length).map(group=>`<section class="practice-level-group ${classes[group.level]}"><h4>${group.level} · ${group.items.length} câu</h4>${group.items.map(x=>{number++;return `<div class="practice-question" data-level="${x.level}" data-answer="${x.answer}"><label><span class="level-tag ${classes[group.level]}">${group.level}</span><strong class="question-number">Câu ${number}:</strong><span class="question-text">${cleanMath(x.question.replace(/^\s*Câu\s*\d+\s*[:.)-]?\s*/i,''))}</span></label><div class="practice-row"><input placeholder="Nhập đáp án"><button class="check-answer">Nộp đáp án</button></div><p class="answer-feedback hidden"></p></div>`}).join('')}</section>`).join('')}<button id="finishPractice" class="btn" disabled>Hoàn thành bài luyện →</button>`;
+  return `<div class="ai-created">✨ AI đã tạo 10 bài: 8 câu cơ bản và 2 câu nâng cao từ lỗi vừa phát hiện.</div>${levels.map(level=>({level,items:items.filter(x=>x.level===level)})).filter(group=>group.items.length).map(group=>`<section class="practice-level-group ${classes[group.level]}"><h4>${group.level} · ${group.items.length} câu</h4>${group.items.map(x=>{number++;return `<div class="practice-question" data-level="${x.level}" data-answer="${x.answer}"><label><span class="level-tag ${classes[group.level]}">${group.level}</span><strong class="question-number">Câu ${number}:</strong><span class="question-text">${x.question.replace(/^\s*Câu\s*\d+\s*[:.)-]?\s*/i,'')}</span></label><div class="practice-row"><input placeholder="Nhập đáp án"><button class="check-answer">Nộp đáp án</button></div><p class="answer-feedback hidden"></p></div>`}).join('')}</section>`).join('')}<button id="finishPractice" class="btn" disabled>Hoàn thành bài luyện →</button>`;
 }
 
 function normalizeAnswer(value){return String(value||'').trim().toLowerCase().replace(/[–—−]/g,'-').replace(/[×·]/g,'*').replace(/:/g,'/').replace(/,/g,'.').replace(/\s+/g,'')}
@@ -259,7 +211,7 @@ const escapeHtml=value=>String(value||'').replace(/[&<>"']/g,char=>({'&':'&amp;'
 
 function demoReview(){
   const wrong=practiceAttempts.filter(x=>!x.isCorrect);
-  return {summary:wrong.length?`Bạn có ${wrong.length} câu cần xem lại.`:'Bạn đã hoàn thành rất tốt cả phần cơ bản lẫn nâng cao.',mistakes:wrong.map(x=>({steps:[`Bước 1: Thực hiện phép tính ${cleanMath(x.question.replace(/^Câu\s*\d+\s*:\s*/i,''))}.`,`Bước 2: Kết quả đúng là ${x.correctAnswer}.`]})),studyPlanner:{today:wrong.length?`Làm lại ${wrong.length} câu sai, ghi rõ từng phép tính.`:'Làm thêm 2 câu cùng dạng để duy trì kết quả tốt.',tomorrow:`Xem trước kiến thức ${currentAnalysis.knowledgePoint.name}.`,review:'Ôn lại các bước tính đã sai trước khi làm bài mới.'}};
+  return {summary:wrong.length?`Bạn có ${wrong.length} câu cần xem lại.`:'Bạn đã hoàn thành rất tốt cả phần cơ bản lẫn nâng cao.',mistakes:wrong.map(x=>({steps:[`Bước 1: Thực hiện phép tính ${x.question.replace(/^Câu\s*\d+\s*:\s*/i,'')}.`,`Bước 2: Kết quả đúng là ${x.correctAnswer}.`]})),studyPlanner:{today:wrong.length?`Làm lại ${wrong.length} câu sai, ghi rõ từng phép tính.`:'Làm thêm 2 câu cùng dạng để duy trì kết quả tốt.',tomorrow:`Xem trước kiến thức ${currentAnalysis.knowledgePoint.name}.`,review:'Ôn lại các bước tính đã sai trước khi làm bài mới.'}};
 }
 
 function renderReview(summary,feedback,total){
@@ -267,12 +219,12 @@ function renderReview(summary,feedback,total){
   const errors=wrong.map((attempt,index)=>{
     const aiItem=(feedback.mistakes||[])[index]||{};
     const cleanQuestion=attempt.question.replace(/^(?:Cơ bản|Nâng cao)\s*/i,'');
-    const steps=(aiItem.steps||[`Bước 1: Thực hiện phép tính ${cleanQuestion.replace(/^Câu\s*\d+\s*:\s*/i,'')}.`,`Bước 2: Kết quả đúng là ${attempt.correctAnswer}.`]).slice(0,4).map(step=>`<li>${escapeHtml(cleanMath(step))}</li>`).join('');
-    return `<article class="review-mistake"><b>Câu sai ${index+1}</b><p class="review-question">${escapeHtml(cleanMath(cleanQuestion))}</p><p>Bạn làm: <s>${escapeHtml(attempt.submittedAnswer||'Chưa nhập')}</s></p><p>Đáp án đúng: <b>${escapeHtml(attempt.correctAnswer)}</b></p><p class="solution-label">Cách làm:</p><ol>${steps}</ol></article>`;
+    const steps=(aiItem.steps||[`Bước 1: Thực hiện phép tính ${cleanQuestion.replace(/^Câu\s*\d+\s*:\s*/i,'')}.`,`Bước 2: Kết quả đúng là ${attempt.correctAnswer}.`]).slice(0,4).map(step=>`<li>${escapeHtml(step)}</li>`).join('');
+    return `<article class="review-mistake"><b>Câu sai ${index+1}</b><p class="review-question">${escapeHtml(cleanQuestion)}</p><p>Bạn làm: <s>${escapeHtml(attempt.submittedAnswer||'Chưa nhập')}</s></p><p>Đáp án đúng: <b>${escapeHtml(attempt.correctAnswer)}</b></p><p class="solution-label">Cách làm:</p><ol>${steps}</ol></article>`;
   }).join('');
   const fallback={today:wrong.length?`Làm lại ${wrong.length} câu sai, ghi rõ từng phép tính.`:'Làm thêm 2 câu cùng dạng để duy trì kết quả tốt.',tomorrow:`Xem trước kiến thức ${currentAnalysis.knowledgePoint.name}.`,review:'Ôn lại các bước tính đã sai trước khi làm bài mới.'};
   const planner={...fallback,...(feedback.studyPlanner||{})};
-  summary.innerHTML=`<b>Kết quả: ${correctCount}/${total} câu đúng</b><p>${escapeHtml(cleanMath(feedback.summary))}</p>${errors?`<div class="review-mistakes">${errors}</div>`:''}<section class="study-planner"><p class="planner-kicker">STUDY PLANNER</p><h4>Kế hoạch ôn tập của bạn</h4><div><b>📝 BTVN hôm nay</b><span>${escapeHtml(planner.today)}</span></div><div><b>📖 Xem trước ngày mai</b><span>${escapeHtml(planner.tomorrow)}</span></div><div><b>💡 Ôn bài cũ + lỗi còn hổng</b><span>${escapeHtml(planner.review)}</span></div></section>`;
+  summary.innerHTML=`<b>Kết quả: ${correctCount}/${total} câu đúng</b><p>${escapeHtml(feedback.summary)}</p>${errors?`<div class="review-mistakes">${errors}</div>`:''}<section class="study-planner"><p class="planner-kicker">STUDY PLANNER</p><h4>Kế hoạch ôn tập của bạn</h4><div><b>📝 BTVN hôm nay</b><span>${escapeHtml(planner.today)}</span></div><div><b>📖 Xem trước ngày mai</b><span>${escapeHtml(planner.tomorrow)}</span></div><div><b>💡 Ôn bài cũ + lỗi còn hổng</b><span>${escapeHtml(planner.review)}</span></div></section>`;
 }
 
 document.addEventListener('click',async event=>{
