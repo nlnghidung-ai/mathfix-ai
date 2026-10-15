@@ -1,5 +1,5 @@
 // THAY 2 GIÁ TRỊ CỦA BẠN VÀO ĐÂY:
-const SUPABASE_URL = 'https://bggdzacrmbwflyogmrck.supabase.co/auth/v1/callback'; // Dán Project URL của bạn
+const SUPABASE_URL = 'https://bggdzacrmbwflyogmrck.supabase.co'; // Dán Project URL của bạn
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJnZ2R6YWNybWJ3Zmx5b2dtcmNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwNzc2NjUsImV4cCI6MjEwNzY1MzY2NX0.nX-hi_bOEO0Pba72B9noGUKHx5dvUw9uuXIcPD_rjgw'; // Dán anon / public key của bạn
 
 // Khởi tạo Supabase client
