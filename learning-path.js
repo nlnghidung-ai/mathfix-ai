@@ -1,8 +1,71 @@
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
-let imageUrl='',cameraStream=null,currentResult=null,currentAnalysis=null,correctCount=0,practiceAttempts=[];
-function setImage(src){imageUrl=src;$('#preview').src=src;$('#preview').classList.remove('hidden');$('#emptyDrop').classList.add('hidden');$('#analyzeBtn').disabled=false;$('#uploadError').classList.add('hidden')}
+let imageUrl='',originalImageUrl='',cropper=null,cameraStream=null,currentResult=null,currentAnalysis=null,correctCount=0,practiceAttempts=[];
+
+function initCropper(src){
+  if(cropper){ cropper.destroy(); cropper = null; }
+  const preview = $('#preview');
+  preview.src = src;
+  cropper = new Cropper(preview, {
+    viewMode: 1,
+    autoCropArea: 0.95,
+    responsive: true,
+    background: false,
+    movable: true,
+    rotatable: true,
+    scalable: true,
+    zoomable: true
+  });
+}
+
+function setImage(src){
+  imageUrl = src;
+  originalImageUrl = src;
+  $('#emptyDropLabel').classList.add('hidden');
+  $('#previewContainer').classList.remove('hidden');
+  $('#analyzeBtn').disabled = false;
+  $('#uploadError').classList.add('hidden');
+  initCropper(src);
+}
+
 function showInputError(message){$('#uploadError').textContent=message;$('#uploadError').classList.remove('hidden')}
-$('#imageInput').onchange=e=>{const f=e.target.files[0];if(!f)return;if(!['image/jpeg','image/png'].includes(f.type)||f.size>10*1024*1024){showInputError('Hãy chọn ảnh JPG hoặc PNG, dung lượng không quá 10 MB.');return}const reader=new FileReader();reader.onload=()=>setImage(reader.result);reader.readAsDataURL(f)};
+
+$('#imageInput').onchange=e=>{
+  const f=e.target.files[0];
+  if(!f)return;
+  if(!['image/jpeg','image/png'].includes(f.type)||f.size>10*1024*1024){
+    showInputError('Hãy chọn ảnh JPG hoặc PNG, dung lượng không quá 10 MB.');
+    return;
+  }
+  const reader=new FileReader();
+  reader.onload=()=>setImage(reader.result);
+  reader.readAsDataURL(f);
+};
+
+// Các nút xoay và cắt ảnh
+$('#rotateLeftBtn').onclick=()=>{ if(cropper) cropper.rotate(-90); };
+$('#rotateRightBtn').onclick=()=>{ if(cropper) cropper.rotate(90); };
+$('#applyCropBtn').onclick=()=>{
+  if(!cropper) return;
+  const canvas = cropper.getCroppedCanvas({ maxWidth: 2048, maxHeight: 2048 });
+  if(canvas){
+    const croppedUrl = canvas.toDataURL('image/jpeg', 0.9);
+    imageUrl = croppedUrl;
+    initCropper(croppedUrl);
+  }
+};
+$('#resetCropBtn').onclick=()=>{
+  if(originalImageUrl){
+    imageUrl = originalImageUrl;
+    initCropper(originalImageUrl);
+  }
+};
+$('#reselectBtn').onclick=()=>{
+  if(cropper){ cropper.destroy(); cropper = null; }
+  $('#imageInput').value = '';
+  $('#previewContainer').classList.add('hidden');
+  $('#emptyDropLabel').classList.remove('hidden');
+  $('#analyzeBtn').disabled = true;
+};
 
 $$('.tab').forEach(t=>t.onclick=async()=>{
   const camera=t.dataset.tab==='camera';
@@ -33,13 +96,46 @@ $('#captureBtn').onclick=()=>{
   cameraStream?.getTracks().forEach(t=>t.stop());
   cameraStream=null;
   
-  // Tự động chuyển về tab "Tải ảnh lên" để xem lại ảnh vừa chụp
+  // Tự động chuyển về tab "Tải ảnh lên"
   $$('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab==='upload'));
   $('#uploadMode').classList.remove('hidden');
   $('#cameraMode').classList.add('hidden');
 };
 
-$('#analyzeBtn').onclick=async()=>{if(!imageUrl)return;$('.old-layout').classList.add('hidden');$('#loadingPanel').classList.remove('hidden');const demo=window.LEARNING_DEMO_MODE===true;const messages=demo?['Đang đọc nội dung bài làm…','Đang xác định kiến thức và lỗi sai…','Đang tạo 8 câu cơ bản và 2 câu nâng cao…']:['Đang gửi ảnh đến AI…','AI đang đọc toàn bộ bài trong ảnh…','AI đang tách từng bài, tìm lỗi và tạo bài luyện…'];let i=0;$('#loadingText').textContent=messages[i];const timer=setInterval(()=>{$('#loadingText').textContent=messages[Math.min(++i,messages.length-1)]},1200);try{if(demo){setTimeout(()=>{clearInterval(timer);showResult({analysisSets:[MockAnalysisService.analyze(imageUrl)],sourceImage:imageUrl})},2100);return}const result=await HomeworkAnalysisService.analyze(imageUrl);clearInterval(timer);showResult(result)}catch(error){clearInterval(timer);$('#loadingPanel').classList.add('hidden');$('.old-layout').classList.remove('hidden');showInputError(error.message||'Không thể phân tích bài làm.')}};
+$('#analyzeBtn').onclick=async()=>{
+  // Nếu người dùng chưa bấm nút cắt mà đã kéo khung, tự động lấy ảnh đã cắt & xoay mới nhất
+  if(cropper){
+    const canvas = cropper.getCroppedCanvas({ maxWidth: 2048, maxHeight: 2048 });
+    if(canvas) imageUrl = canvas.toDataURL('image/jpeg', 0.9);
+  }
+  if(!imageUrl)return;
+  
+  $('.old-layout').classList.add('hidden');
+  $('#loadingPanel').classList.remove('hidden');
+  const demo=window.LEARNING_DEMO_MODE===true;
+  const messages=demo?['Đang đọc nội dung bài làm…','Đang xác định kiến thức và lỗi sai…','Đang tạo 8 câu cơ bản và 2 câu nâng cao…']:['Đang gửi ảnh đến AI…','AI đang đọc toàn bộ bài trong ảnh…','AI đang tách từng bài, tìm lỗi và tạo bài luyện…'];
+  let i=0;
+  $('#loadingText').textContent=messages[i];
+  const timer=setInterval(()=>{$('#loadingText').textContent=messages[Math.min(++i,messages.length-1)]},1200);
+  try{
+    if(demo){
+      setTimeout(()=>{
+        clearInterval(timer);
+        showResult({analysisSets:[MockAnalysisService.analyze(imageUrl)],sourceImage:imageUrl});
+      },2100);
+      return;
+    }
+    const result=await HomeworkAnalysisService.analyze(imageUrl);
+    clearInterval(timer);
+    showResult(result);
+  }catch(error){
+    clearInterval(timer);
+    $('#loadingPanel').classList.add('hidden');
+    $('.old-layout').classList.remove('hidden');
+    showInputError(error.message||'Không thể phân tích bài làm.');
+  }
+};
+
 function showResult(result){currentResult=result;$('#loadingPanel').classList.add('hidden');$('#resultPanel').classList.remove('hidden');$('#resultImage').src=imageUrl;showAnalysis(0)}
 function showAnalysis(index){currentAnalysis=currentResult.analysisSets[index];correctCount=0;practiceAttempts=[];const r=currentAnalysis;$('#topicLabel').textContent=`${r.subject.name} · ${r.knowledgePoint.name}`;$('#recommendation').textContent=r.aiRecommendation.message;const sets=currentResult.analysisSets;$('#problemNavigator').innerHTML=sets.length>1?`<div class="problem-nav"><span class="problem-nav-label">Ảnh có ${sets.length} bài cần xem lại. Chọn một bài:</span>${sets.map((item,itemIndex)=>`<button class="problem-tab ${itemIndex===index?'active':''}" data-analysis="${itemIndex}">${item.title||`Bài ${itemIndex+1}`}</button>`).join('')}</div>`:'';$$('.problem-tab').forEach(button=>button.onclick=()=>showAnalysis(Number(button.dataset.analysis)));$('#errorList').innerHTML=r.learningErrors.map(e=>`<article class="error-card"><span class="severity">Cần ôn lại</span><h3>${e.title}</h3><div class="work-compare"><div><small>BẠN ĐÃ LÀM</small><b>${e.studentWork}</b></div><div><small>CÁCH ĐÚNG</small><b>${e.correction}</b></div></div><p><b>Vị trí:</b> ${e.position}. ${e.explanation}</p><div class="tip">💡 ${e.tip}</div></article>`).join('');renderPath(r)}
 function renderPath(r){$('#pathSteps').innerHTML=r.learningPath.map((s,i)=>`<article class="path-step ${i?'':'active'}" data-step="${s.step}"><p class="step-tag">BƯỚC ${s.step}</p><h3>${s.title}</h3><p>${s.goal}</p>${i===0?`<a class="resource" target="_blank" rel="noopener" href="${r.learningResources[0].url}">▶ ${r.learningResources[0].title}</a><button class="btn next-step">Đã học lý thuyết →</button>`:''}${i===1?practiceMarkup(r.generatedExercises):''}${i===2?`<div id="practiceSummary" class="summary-card">Hoàn thành các bài luyện để nhận xét kết quả.</div><button class="btn restart">Tạo phân tích mới</button>`:''}</article>`).join('');$('.next-step').onclick=()=>goStep(2);$$('.check-answer').forEach(b=>b.onclick=checkAnswer);$('.restart').onclick=()=>location.reload()}
