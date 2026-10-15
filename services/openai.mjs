@@ -1,4 +1,4 @@
-// Chỉ thị 0: Chỉ đọc chữ và công thức trong ảnh để học sinh kiểm tra (không phán đoán đúng sai)
+// Chỉ thị 0: Quét nội dung đề bài và bài làm
 const scanInstructions = `Bạn là trợ lý đọc ảnh bài làm học sinh. Hãy đọc trung thực nguyên văn:
 1. Đề bài trong ảnh.
 2. Từng bước giải/phép tính của học sinh.
@@ -29,6 +29,7 @@ Quy tắc:
 Trả về DUY NHẤT JSON đúng cấu trúc:
 {"exercises":[{"level":"Cơ bản","question":"","answer":"","solution":""}]}`;
 
+// Chỉ thị 3: Nhận xét sau bài luyện tập
 const reviewInstructions = `Bạn là trợ lý sư phạm. Dựa HOÀN TOÀN vào dữ liệu bài luyện đã nộp, chỉ xét attempts có isCorrect:false, đúng thứ tự; không bịa thêm lỗi.
 Với MỖI câu sai, tạo 2 đến 4 bước giải đúng, rõ như bài làm ngắn. Mỗi bước một câu, tối đa 18 từ và có phép tính/biến đổi CỤ THỂ từ đề. Không viết "đọc kỹ đề", "tính lần lượt" hoặc "đối chiếu đáp án". Không viết lại đề, đáp án hoặc mức độ.
 summary tối đa 2 câu. Tạo studyPlanner bám sát lỗi sai: today, tomorrow, review; mỗi mục tối đa 22 từ.
@@ -49,15 +50,73 @@ function extractText(body) {
   return parts.join('');
 }
 
+// BỘ TỰ ĐỘNG SỬA TẤT CẢ LỖI ESCAPE CỦA JSON DO KÝ HIỆU TOÁN HỌC GÂY RA
+function repairJson(jsonStr) {
+  let result = '';
+  let inString = false;
+  let i = 0;
+
+  while (i < jsonStr.length) {
+    const char = jsonStr[i];
+
+    if (!inString) {
+      if (char === '"') inString = true;
+      result += char;
+      i++;
+    } else {
+      if (char === '"') {
+        inString = false;
+        result += char;
+        i++;
+      } else if (char === '\\') {
+        const next = jsonStr[i + 1];
+        if (!next) {
+          result += '\\\\';
+          i++;
+        } else if (next === '"' || next === '\\' || next === '/') {
+          result += '\\' + next;
+          i += 2;
+        } else if (next === 'b' || next === 'f' || next === 'n' || next === 'r' || next === 't') {
+          const afterNext = jsonStr[i + 2];
+          // Nếu \frac, \neq, \times... đi liền với chữ cái, đây là ký hiệu toán, cần escape \\
+          if (afterNext && /[a-zA-Z]/.test(afterNext)) {
+            result += '\\\\' + next;
+            i += 2;
+          } else {
+            result += '\\' + next;
+            i += 2;
+          }
+        } else if (next === 'u' && /^[0-9a-fA-F]{4}$/.test(jsonStr.slice(i + 2, i + 6))) {
+          result += jsonStr.slice(i, i + 6);
+          i += 6;
+        } else {
+          // Bất kỳ ký hiệu nào khác đi sau dấu \ (như \(, \), \[, \], \{, \}, \s, \d, \p, \+, \-, v.v.)
+          // Tự động thêm một dấu \ để thành \\ hợp lệ trong JSON
+          result += '\\\\' + next;
+          i += 2;
+        }
+      } else if (char === '\n') {
+        result += '\\n';
+        i++;
+      } else if (char === '\r') {
+        i++;
+      } else if (char === '\t') {
+        result += '\\t';
+        i++;
+      } else {
+        result += char;
+        i++;
+      }
+    }
+  }
+  return result;
+}
+
 function parseJson(text) {
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) throw new Error('Mô hình không trả về dữ liệu hợp lệ.');
-  try {
-    return JSON.parse(match[0]);
-  } catch {
-    const safeStr = match[0].replace(/\\([a-zA-Z])/g, '\\\\$1');
-    return JSON.parse(safeStr);
-  }
+  const cleaned = repairJson(match[0]);
+  return JSON.parse(cleaned);
 }
 
 async function requestAI(input) {
