@@ -3,6 +3,7 @@ const scanInstructions = `Bạn là trợ lý đọc ảnh bài làm học sinh 
 1. Đề bài bài toán trong ảnh.
 2. Từng bước giải hoặc bài làm của học sinh trong ảnh.
 Không giải bài, không nhận xét đúng sai ở bước này.
+QUY TẮC HIỂN THỊ TOÁN HỌC: Mọi biểu thức toán học (phân số, căn bậc, lũy thừa, số mũ, phương trình) hãy viết dưới dạng LaTeX kẹp giữa cặp dấu $, ví dụ: $x^{12}$, $\\frac{a}{b}$, $\\sqrt{x}$, $\\sqrt[3]{x}$.
 QUY TẮC NGÔN NGỮ: Toàn bộ nội dung trả về (problemText, studentWorkText, message) BẮT BUỘC 100% BẰNG TIẾNG VIỆT.
 Trả về duy nhất JSON đúng cấu trúc:
 {"readable":true,"needsRetake":false,"problemText":"Nguyên văn đề bài đọc được","studentWorkText":"Nguyên văn bài làm của học sinh","message":""}
@@ -14,10 +15,13 @@ Quy trình bắt buộc: (1) đọc đề bài, (2) đọc từng phép tính/b�
 Ảnh có thể có NHIỀU bài. Phải tách từng bài độc lập; không gộp lỗi của bài này sang bài khác.
 Chỉ tập trung phát hiện lỗi và kiến thức cần ôn, KHÔNG tự tạo bài tập.
 
+QUY TẮC HIỂN THỊ TOÁN HỌC BẮT BUỘC:
+Mọi công thức, biểu thức toán học (lũy thừa, căn thức, phân số, phương trình, số mũ) BẮT BUỘC viết dưới dạng LaTeX chuẩn kẹp giữa cặp dấu $, ví dụ: $x^2$, $n^{12}$, $\\frac{a}{b}$, $\\sqrt{x}$, $\\sqrt[3]{x}$. Tuyệt đối không viết thô x^2 hay a/b.
+
 QUY TẮC NGÔN NGỮ BẮT BUỘC:
 TOÀN BỘ các trường văn bản trong JSON (gồm title, topic, position, expectedWork, explanation, note, improvements) BẮT BUỘC 100% PHẢI VIẾT BẰNG TIẾNG VIỆT, tuyệt đối KHÔNG được dùng tiếng Anh.
-- expectedWork: Cách làm đúng / phép tính đúng bằng tiếng Việt.
-- explanation: Lời giải thích vì sao sai và cách sửa bằng tiếng Việt dễ hiểu, gần gũi với học sinh.
+- expectedWork: Cách làm đúng / phép tính đúng kèm công thức LaTeX $...$.
+- explanation: Lời giải thích vì sao sai và cách sửa bằng tiếng Việt dễ hiểu kèm công thức $...$.
 - note: Mẹo nhỏ hoặc lưu ý ngắn gọn bằng tiếng Việt giúp học sinh tránh lặp lại lỗi.
 
 Trả về duy nhất JSON đúng cấu trúc:
@@ -30,8 +34,8 @@ const recheckInstructions = `Bạn là chuyên gia thẩm định sư phạm To�
 Học sinh phản hồi rằng: "AI chỉ sai rồi" ở một bước giải mà AI trước đó đã báo lỗi.
 Nhiệm vụ của bạn: Hãy bình tĩnh, đặt giả định học sinh có thể làm đúng (ví dụ làm cách khác, biến đổi tắt, hoặc cách hiểu tương đương). Hãy tự giải lại và kiểm tra độc lập từng phép tính:
 - Nếu học sinh LÀM ĐÚNG (AI trước đó bắt lỗi sai oan): Hãy thừa nhận, gửi lời xin lỗi và khen ngợi cách làm hợp lý của học sinh.
-- Nếu học sinh THỰC SỰ LÀM SAI: Hãy giải thích lại thật ân cần, chi tiết từng con số để học sinh hiểu rõ vì sao bước đó chưa đúng.
-QUY TẮC NGÔN NGỮ: Toàn bộ nội dung BẮT BUỘC 100% BẰNG TIẾNG VIỆT.
+- Nếu học sinh THỰC SỰ LÀM SAI: Hãy giải thích lại thật ân cần, chi tiết từng phép tính để học sinh hiểu rõ vì sao bước đó chưa đúng.
+QUY TẮC: Mọi công thức toán kẹp giữa $, toàn bộ lời giải thích bằng 100% TIẾNG VIỆT.
 Trả về duy nhất JSON đúng cấu trúc:
 {
   "isStudentCorrect": true hoặc false,
@@ -45,17 +49,18 @@ const exerciseInstructions = `Bạn là trợ lý sư phạm Toán. Dựa vào c
 - Câu 2 và Câu 3 (level: "Tương đương"): Cùng mức độ với bài làm trong ảnh để rèn luyện lại cách giải.
 - Câu 4 (level: "Nâng cao"): Mở rộng thêm một chút để vận dụng.
 QUY TẮC:
+- Mọi công thức toán trong question và solution BẮT BUỘC dùng định dạng LaTeX kẹp giữa cặp dấu $, ví dụ: $\\frac{1}{2}$, $x^3$, $\\sqrt{2x + 1}$.
 - TOÀN BỘ đề bài (question) và lời giải (solution) BẮT BUỘC 100% BẰNG TIẾNG VIỆT.
 - question: chỉ chứa nội dung đề bài, KHÔNG ghi tiền tố "Câu 1:" hay "Bài 1:".
 - answer: đáp án ngắn gọn (chỉ số nguyên, phân số dạng a/b, hoặc biểu thức rút gọn), không giải thích dài dòng ở trường answer.
-- solution: lời giải ngắn gọn 1-2 dòng bằng tiếng Việt.
+- solution: lời giải ngắn gọn 1-2 dòng bằng tiếng Việt có công thức $.
 - level: nhận đúng 1 trong 3 giá trị: "Dễ hơn", "Tương đương", "Nâng cao".
 Trả về DUY NHẤT JSON đúng cấu trúc:
 {"exercises":[{"level":"Dễ hơn","question":"","answer":"","solution":""}]}`;
 
 // Chỉ thị 3: Nhận xét sau bài luyện tập
 const reviewInstructions = `Bạn là trợ lý sư phạm. Dựa HOÀN TOÀN vào dữ liệu bài luyện đã nộp, chỉ xét attempts có isCorrect:false, đúng thứ tự; không bịa thêm lỗi.
-QUY TẮC NGÔN NGỮ: Toàn bộ nhận xét, các bước giải mẫu và kế hoạch học tập (studyPlanner) BẮT BUỘC 100% BẰNG TIẾNG VIỆT.
+QUY TẮC: Mọi công thức toán dùng $...$, toàn bộ nhận xét, các bước giải mẫu và kế hoạch học tập (studyPlanner) BẮT BUỘC 100% BẰNG TIẾNG VIỆT.
 Với MỖI câu sai, tạo 2 đến 4 bước giải đúng, rõ như bài làm ngắn. Mỗi bước một câu, tối đa 18 từ.
 summary tối đa 2 câu bằng tiếng Việt. Tạo studyPlanner bám sát lỗi sai: today, tomorrow, review; mỗi mục tối đa 22 từ bằng tiếng Việt.
 Trả duy nhất JSON: {"summary":"","mistakes":[{"steps":["Bước 1: ...","Bước 2: ..."]}],"studyPlanner":{"today":"","tomorrow":"","review":""}}. Số mistakes phải bằng số attempts sai.`;
@@ -75,6 +80,7 @@ function extractText(body) {
   return parts.join('');
 }
 
+// BỘ TỰ ĐỘNG SỬA VÀ VÁ TẤT CẢ LỖI JSON
 function repairJson(jsonStr) {
   let str = jsonStr.trim();
   str = str.replace(/\}\s*\{/g, '},{');
