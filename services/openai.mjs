@@ -1,12 +1,9 @@
-// Chỉ thị 1: Đọc ảnh & Tìm lỗi sai (Vision) - Bắt buộc escape dấu \ trong JSON
+// Chỉ thị 1: Đọc ảnh & Tìm lỗi sai (Vision) - Viết công thức toán tự nhiên, KHÔNG dùng $...$
 const analyzeInstructions = `Bạn là trợ lý sư phạm phân tích ẢNH BÀI LÀM học sinh Việt Nam.
 Quy trình bắt buộc: (1) đọc nguyên văn đề bài, (2) đọc từng phép tính/bước làm của học sinh, (3) tự tính lại, (4) chỉ ra lỗi dựa trên bằng chứng nhìn thấy trong ảnh.
 Ảnh có thể có NHIỀU bài. Phải tách từng bài độc lập; không gộp lỗi của bài này sang bài khác. Không khẳng định lỗi nếu chữ hoặc đề bài mờ.
 Chỉ tập trung phát hiện lỗi và kiến thức cần ôn, KHÔNG tự tạo bài tập ở bước này.
-
-QUY TẮC HIỂN THỊ TOÁN HỌC & JSON BẮT BUỘC:
-1. Mọi công thức toán (phân số, lũy thừa, căn bậc hai, phương trình, biến số) BẮT BUỘC viết bằng LaTeX kẹp giữa cặp dấu $, ví dụ: $x^2$, $\\frac{a}{b}$, $\\sqrt{x}$, $\\sqrt[3]{x}$, $2x + 5 = 17$.
-2. ĐẶC BIỆT: Trong chuỗi JSON, mọi dấu gạch chéo ngược (\\) của LaTeX BẮT BUỘC phải viết thành hai dấu gạch chéo (\\\\) để JSON hợp lệ. Ví dụ: viết "\\\\frac{a}{b}" (KHÔNG viết "\\frac{a}{b}"), viết "\\\\sqrt{x}" (KHÔNG viết "\\sqrt{x}").
+Các công thức toán học hãy trình bày tự nhiên, dễ đọc, KHÔNG cần kẹp giữa cặp dấu $.
 
 Trả về duy nhất JSON đúng cấu trúc:
 {"readable":true,"needsRetake":false,"message":"","analyses":[{"title":"Bài 1","subject":"Toán","topic":"","errors":[{"position":"","studentWork":"","expectedWork":"","title":"","explanation":"","note":""}],"improvements":[""]}]}
@@ -15,22 +12,19 @@ Nếu readable:true: mỗi phần tử analyses là đúng một bài có ít nh
 
 // Chỉ thị 2: Sinh 10 bài luyện tập từ lỗi sai
 const exerciseInstructions = `Bạn là trợ lý sư phạm Toán. Dựa vào chủ đề và các lỗi học sinh vừa mắc phải, hãy TỰ TẠO bộ luyện tập gồm đúng 8 câu mức "Cơ bản" và 2 câu mức "Nâng cao" bám sát dạng toán và lỗi này để học sinh củng cố kiến thức.
-
-QUY TẮC TOÁN HỌC & JSON BẮT BUỘC:
-1. Mọi công thức trong question và solution BẮT BUỘC dùng định dạng LaTeX kẹp giữa $, ví dụ: $\\frac{1}{2}$, $x^3$, $\\sqrt{2x + 1}$.
-2. Mọi dấu gạch chéo ngược (\\) trong JSON BẮT BUỘC viết thành hai dấu gạch chéo (\\\\), ví dụ: "\\\\frac{1}{2}", "\\\\sqrt{x}".
 - 8 câu đầu mức "Cơ bản" (rèn quy tắc, tính toán nền tảng).
 - 2 câu sau mức "Nâng cao" (vận dụng, phân tích).
-- question: chỉ chứa nội dung đề bài, KHÔNG ghi tiền tố "Câu 1:" hay "Bài 1:".
+- Các câu hỏi phải đa dạng, tự kiểm tra đáp án.
+- question: chỉ chứa nội dung đề bài, KHÔNG ghi tiền tố "Câu 1:" hay "Bài 1:". Trình bày tự nhiên, KHÔNG kẹp dấu $.
 - answer: đáp án ngắn gọn (chỉ số nguyên, phân số dạng a/b hoặc biểu thức rút gọn), không giải thích dài dòng ở trường answer.
-- solution: lời giải ngắn gọn 1-2 dòng có công thức LaTeX.
+- solution: lời giải ngắn gọn 1-2 dòng.
 
 Trả về DUY NHẤT JSON đúng cấu trúc:
 {"exercises":[{"level":"Cơ bản","question":"","answer":"","solution":""}]}`;
 
 // Chỉ thị 3: Nhận xét sau bài luyện tập
 const reviewInstructions = `Bạn là trợ lý sư phạm. Dựa HOÀN TOÀN vào dữ liệu bài luyện đã nộp, chỉ xét attempts có isCorrect:false, đúng thứ tự; không bịa thêm lỗi.
-Với MỖI câu sai, tạo 2 đến 4 bước giải đúng, rõ như bài làm ngắn. Mọi công thức toán dùng LaTeX kẹp giữa $...$ và escape dấu \\ thành \\\\. Mỗi bước một câu, tối đa 18 từ. Không viết lại đề, đáp án hoặc mức độ.
+Với MỖI câu sai, tạo 2 đến 4 bước giải đúng, rõ như bài làm ngắn. Mỗi bước một câu, tối đa 18 từ. Không viết lại đề, đáp án hoặc mức độ.
 summary tối đa 2 câu. Tạo studyPlanner bám sát lỗi sai: today, tomorrow, review; mỗi mục tối đa 22 từ.
 Trả duy nhất JSON: {"summary":"","mistakes":[{"steps":["Bước 1: ...","Bước 2: ..."]}],"studyPlanner":{"today":"","tomorrow":"","review":""}}. Số mistakes phải bằng số attempts sai.`;
 
@@ -49,36 +43,15 @@ function extractText(body) {
   return parts.join('');
 }
 
-// Hàm làm sạch chuỗi JSON và tự động sửa các lỗi dấu gạch chéo ngược (\) của LaTeX
-function cleanJsonString(raw) {
-  // Lấy chính xác khối JSON nằm giữa cặp ngoặc nhọn ngoài cùng
-  const match = raw.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error('Mô hình không trả về dữ liệu JSON hợp lệ.');
-  let str = match[0];
-
-  // 1. Tự động sửa các lệnh LaTeX hay bị trùng với escape JSON (\frac, \times, \neq, \right, \bar...)
-  str = str.replace(/\\(frac|times|neq|right|left|bar|bullet|beta|tau|theta|nabla|text|begin|end)/gi, '\\\\$1');
-
-  // 2. Tự động sửa các ký tự gạch chéo đơn của LaTeX gây lỗi JSON (như \s trong \sqrt, \d trong \div, \p trong \pm...)
-  str = str.replace(/(^|[^\\])\\([^"\\/bfnrtu]|u(?![\da-fA-F]{4}))/g, '$1\\\\$2');
-
-  return str;
-}
-
 function parseJson(text) {
+  const match = text.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error('Mô hình không trả về dữ liệu hợp lệ.');
   try {
-    const cleaned = cleanJsonString(text);
-    return JSON.parse(cleaned);
-  } catch (err) {
-    // Phương án dự phòng: nếu vẫn còn ký tự LaTeX chưa escape, ép escape toàn bộ dấu \ trước ký tự chữ cái
-    try {
-      const match = text.match(/\{[\s\S]*\}/);
-      if (!match) throw err;
-      const fallback = match[0].replace(/\\([a-zA-Z{}()[\]_.,^+-])/g, '\\\\$1');
-      return JSON.parse(fallback);
-    } catch {
-      throw new Error(`Lỗi định dạng dữ liệu từ AI: ${err.message}. Vui lòng thử lại.`);
-    }
+    return JSON.parse(match[0]);
+  } catch {
+    // Dự phòng tự động sửa nếu có ký tự gạch chéo ngược đơn
+    const safeStr = match[0].replace(/\\([a-zA-Z])/g, '\\\\$1');
+    return JSON.parse(safeStr);
   }
 }
 
@@ -94,7 +67,6 @@ async function requestAI(input) {
     input: input
   };
 
-  // Giảm thời gian suy luận của GPT-5 xuống mức tối thiểu để phản hồi dưới 8 giây, chống Timeout 504 trên Netlify
   if (model.includes('gpt-5') || model.includes('o1') || model.includes('o3')) {
     payload.reasoning = { effort: 'minimal' };
   }
