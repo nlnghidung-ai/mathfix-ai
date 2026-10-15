@@ -10,6 +10,18 @@ function initCropper(src){
   });
 }
 
+function renderMath() {
+  if (window.renderMathInElement) {
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: '$$', right: '$$', display: true },
+        { left: '$', right: '$', display: false }
+      ],
+      throwOnError: false
+    });
+  }
+}
+
 function setImage(src){
   imageUrl = src;
   originalImageUrl = src;
