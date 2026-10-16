@@ -604,4 +604,141 @@ function practiceMarkup(items){
         return `
           <div class="practice-question" data-level="${lvl}" data-question="${encodeURIComponent(x.question)}" data-solution="${encodeURIComponent(x.solution || '')}" data-index="${idx}">
             <label>
-              <span class="lev
+              <span class="level-tag ${cls}">${lvl}</span>
+              <strong class="question-number">Câu ${num}:</strong>
+              <span class="question-text">${formatMathHTML(x.question.replace(/^\s*Câu\s*\d+\s*[:.)-]?\s*/i, ''))}</span>
+            </label>
+            <div class="practice-solution-box">
+              <textarea class="practice-steps-textarea" placeholder="Gõ các bước giải của bạn vào đây (khoảng 2-4 dòng, gõ phím bình thường)..." rows="3"></textarea>
+              <button class="btn check-answer" type="button" style="align-self: flex-start; padding: 7px 16px; font-size: 13px;">Nộp bài giải</button>
+            </div>
+            <div class="practice-grade-result hidden"></div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+    <button id="finishPractice" class="btn" disabled>Hoàn thành bài luyện →</button>
+  `;
+}
+
+function bindPracticeEvents(){
+  $$('.check-answer').forEach(btn => {
+    btn.onclick = async (event) => {
+      const box = event.currentTarget.closest('.practice-question');
+      const textarea = box.querySelector('.practice-steps-textarea');
+      const resultBox = box.querySelector('.practice-grade-result');
+      const stepsText = textarea.value.trim();
+
+      if (!stepsText) {
+        alert('Vui lòng nhập các bước giải của bạn trước khi nộp bài.');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = '⏳ AI đang chấm từng bước…';
+      textarea.disabled = true;
+
+      const questionText = decodeURIComponent(box.dataset.question);
+      const solutionText = decodeURIComponent(box.dataset.solution);
+
+      try {
+        const gradeRes = await HomeworkAnalysisService.gradePractice({
+          question: questionText,
+          studentSteps: stepsText,
+          solution: solutionText
+        });
+
+        box.dataset.done = 'yes';
+        resultBox.classList.remove('hidden');
+
+        const isOk = gradeRes.isCorrect === true;
+        resultBox.className = `practice-grade-result ${isOk ? 'correct' : (gradeRes.score >= 5 ? 'partial' : 'wrong')}`;
+        resultBox.innerHTML = `
+          <div><strong>Điểm: ${gradeRes.score || (isOk ? '10/10' : '0/10')} · ${gradeRes.verdict || ''}</strong></div>
+          <div style="margin-top:4px;">${formatMathHTML(gradeRes.feedback || '')}</div>
+        `;
+
+        btn.textContent = isOk ? '✓ Đã hoàn thành' : 'Đã chấm bài';
+
+        practiceAttempts.push({
+          question: questionText,
+          level: box.dataset.level,
+          submittedAnswer: stepsText,
+          correctAnswer: solutionText,
+          isCorrect: isOk,
+          score: gradeRes.score
+        });
+
+        if (isOk) correctCount++;
+
+        if ($$('.practice-question[data-done="yes"]').length === currentAnalysis.generatedExercises.length) {
+          $('#finishPractice').disabled = false;
+        }
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = 'Nộp bài giải';
+        textarea.disabled = false;
+        alert('Lỗi chấm bài: ' + err.message);
+      }
+    };
+  });
+}
+
+const escapeHtml=value=>String(value||'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+
+function demoReview(){
+  const wrong=practiceAttempts.filter(x=>!x.isCorrect);
+  return {
+    summary: wrong.length ? `Bạn có ${wrong.length} câu cần lưu ý về bước giải hoặc phép tính.` : 'Bạn đã giải rất tốt và đầy đủ các bước biến đổi.',
+    mistakes: wrong.map(x=>({steps:[`Đề bài: ${x.question}`, `Lời giải chuẩn: ${x.correctAnswer}`]})),
+    studyPlanner:{
+      today: wrong.length ? `Làm lại ${wrong.length} bài chưa đạt điểm tối đa, chú ý không làm tắt bước.` : 'Làm thêm các bài toán cùng chủ đề để rèn luyện tốc độ.',
+      tomorrow: `Ôn tiếp kiến thức ${currentAnalysis.knowledgePoint.name}.`,
+      review: 'Xem lại các quy tắc biến đổi và công thức toán THCS đã dùng.'
+    }
+  };
+}
+
+function renderReview(summary,feedback,total){
+  const wrong=practiceAttempts.filter(x=>!x.isCorrect);
+  const errors=wrong.map((attempt,index)=>{
+    const cleanQuestion=attempt.question.replace(/^(?:Dễ hơn|Tương đương|Nâng cao)\s*/i,'');
+    return `
+      <article class="review-mistake">
+        <b>Câu ${index+1} cần xem lại</b>
+        <p class="review-question">${formatMathHTML(cleanQuestion)}</p>
+        <p><strong>Bài làm của bạn:</strong></p>
+        <pre style="white-space:pre-wrap; background:#fff; padding:8px 10px; border-radius:6px; font-family:inherit;">${escapeHtml(attempt.submittedAnswer)}</pre>
+        <p class="solution-label"><strong>Gợi ý biến đổi chuẩn:</strong> ${formatMathHTML(attempt.correctAnswer)}</p>
+      </article>
+    `;
+  }).join('');
+  const fallback={today:wrong.length?`Làm lại ${wrong.length} câu sai, ghi rõ từng phép tính.`:'Làm thêm câu cùng dạng để duy trì kết quả tốt.',tomorrow:`Xem trước kiến thức ${currentAnalysis.knowledgePoint.name}.`,review:'Ôn lại các bước tính đã sai trước khi làm bài mới.'};
+  const planner={...fallback,...(feedback.studyPlanner||{})};
+  summary.innerHTML=`<b>Kết quả luyện tập: ${correctCount}/${total} bài đạt điểm tuyệt đối</b><p>${formatMathHTML(feedback.summary)}</p>${errors?`<div class="review-mistakes">${errors}</div>`:''}<section class="study-planner"><p class="planner-kicker">STUDY PLANNER</p><h4>Kế hoạch ôn tập của bạn</h4><div><b>📝 BTVN hôm nay</b><span>${formatMathHTML(planner.today)}</span></div><div><b>📖 Xem trước ngày mai</b><span>${formatMathHTML(planner.tomorrow)}</span></div><div><b>💡 Ôn bài cũ + lỗi còn hổng</b><span>${formatMathHTML(planner.review)}</span></div></section>`;
+}
+
+document.addEventListener('click',async event=>{
+  if(event.target.id==='finishPractice'){
+    const summary=$('#practiceSummary'),total=currentAnalysis.generatedExercises.length;
+    goStep(3);
+    summary.textContent='AI đang tổng hợp các bài tự luận và đưa nhận xét…';
+    try{
+      const feedback=window.LEARNING_DEMO_MODE?demoReview():await HomeworkAnalysisService.reviewPractice({topic:currentAnalysis.knowledgePoint.name,detectedErrors:currentAnalysis.learningErrors,attempts:practiceAttempts});
+      renderReview(summary,feedback,total);
+
+      if (window.MathFixAuth?.savePractice) {
+        window.MathFixAuth.savePractice(currentAnalysis.knowledgePoint.name, correctCount, total, practiceAttempts);
+      }
+    }catch(error){
+      summary.textContent=`Bạn hoàn thành ${correctCount}/${total} bài. AI chưa thể tạo nhận xét chi tiết: ${error.message}`;
+    }
+  }
+});
+
+function goStep(step){
+  const current=$('.path-step.active'),next=$(`.path-step[data-step="${step}"]`);
+  current.classList.remove('active');
+  next.classList.add('active');
+  $$('.path-progress i').forEach((item,index)=>item.classList.toggle('active',index<step));
+}
