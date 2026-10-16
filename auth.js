@@ -20,7 +20,6 @@ function getSupabaseClient() {
   return null;
 }
 
-// BẬT / ĐÓNG MODAL ĐĂNG NHẬP
 window.openLoginModal = function() {
   const modal = document.getElementById('loginModal');
   if (modal) modal.classList.remove('hidden');
@@ -68,14 +67,12 @@ window.loginWithEmail = async function(e) {
   try {
     const isRegister = window._authMode === 'register';
     if (isRegister) {
-      // Đăng ký
       const { data, error } = await client.auth.signUp({ email, password });
       if (error) throw error;
       alert('Đăng ký thành công! Đang chuyển vào phòng học...');
       closeLoginModal();
       location.reload();
     } else {
-      // Đăng nhập
       const { data, error } = await client.auth.signInWithPassword({ email, password });
       if (error) throw error;
       closeLoginModal();
@@ -89,7 +86,6 @@ window.loginWithEmail = async function(e) {
   }
 };
 
-// ĐỔI TAB ĐĂNG NHẬP / ĐĂNG KÝ
 window.setAuthMode = function(mode) {
   window._authMode = mode;
   const isReg = mode === 'register';
@@ -98,21 +94,18 @@ window.setAuthMode = function(mode) {
   document.getElementById('btnSubmitEmailAuth').textContent = isReg ? 'Đăng ký tài khoản' : 'Đăng nhập';
 };
 
-// ĐĂNG XUẤT
 window.logoutMathFix = async function() {
   const client = getSupabaseClient();
   if (client) await client.auth.signOut();
   location.reload();
 };
 
-// BẬT / TẮT MENU ĐỔ XUỐNG KHI BẤM AVATAR
 window.toggleUserMenu = function(e) {
   if (e) e.stopPropagation();
   const dropdown = document.getElementById('userDropdownMenu');
   if (dropdown) dropdown.classList.toggle('hidden');
 };
 
-// Đóng menu khi bấm ra ngoài
 document.addEventListener('click', (e) => {
   const dropdown = document.getElementById('userDropdownMenu');
   const trigger = document.getElementById('avatarTriggerBtn');
@@ -124,12 +117,21 @@ document.addEventListener('click', (e) => {
 // CẬP NHẬT GIAO DIỆN NAVBAR
 function updateAuthUI(user) {
   const containers = [document.getElementById('authNavArea'), document.getElementById('homeAuthArea')];
+  
+  // Tự động ẩn/hiện nút "Giới thiệu" trên thanh tiêu đề: Khi đã đăng nhập thì ẩn đi cho gọn
+  const navAboutLinks = [document.getElementById('navAboutLink'), document.getElementById('homeAboutLink')];
+  navAboutLinks.forEach(link => {
+    if (link) {
+      if (user) link.classList.add('hidden');
+      else link.classList.remove('hidden');
+    }
+  });
 
   containers.forEach(container => {
     if (!container) return;
 
     if (user) {
-      // ĐÃ ĐĂNG NHẬP: CHỈ HIỆN AVATAR TRÒN, BẤM VÀO ĐỔ XUỐNG MENU
+      // ĐÃ ĐĂNG NHẬP: CHỈ HIỆN DUY NHẤT AVATAR TRÒN, TRONG MENU ĐỔ XUỐNG CÓ "Giới thiệu dự án"
       const name = user.user_metadata?.full_name || user.email.split('@')[0];
       const email = user.email || '';
       const avatar = user.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`;
@@ -150,7 +152,7 @@ function updateAuthUI(user) {
               <span>📜</span> Lịch sử học tập
             </button>
             <a href="about.html" class="user-menu-item">
-              <span>🏆</span> Giới thiệu dự án 2026
+              <span>🏆</span> Giới thiệu dự án
             </a>
             <div class="user-menu-divider"></div>
             <button class="user-menu-item text-danger" type="button" onclick="logoutMathFix()">
@@ -171,7 +173,6 @@ function updateAuthUI(user) {
   });
 }
 
-// Khởi chạy Auth
 async function initAuth() {
   let client = getSupabaseClient();
   if (!client) {
