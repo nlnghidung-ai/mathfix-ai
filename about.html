@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Giới thiệu Dự án — MATHFIX AI 2026</title>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .about-page {
+      padding: 40px 20px 80px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .contest-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #eff6ff, #dbeafe);
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+      padding: 8px 18px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.1);
+    }
+    .about-header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .about-header h1 {
+      font-size: 36px;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.25;
+      margin-bottom: 16px;
+    }
+    .about-header h1 span {
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .about-header p {
+      font-size: 16px;
+      color: #64748b;
+      max-width: 680px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+    .section-box {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 32px;
+      margin-bottom: 32px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    }
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .members-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+    .member-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 24px 20px;
+      text-align: center;
+      transition: all 0.25s ease;
+    }
+    .member-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(37, 99, 235, 0.1);
+      border-color: #93c5fd;
+    }
+    .member-avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: 700;
+      margin: 0 auto 16px;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+    }
+    .member-name {
+      font-size: 17px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 6px;
+    }
+    .member-class {
+      display: inline-block;
+      background: #e0e7ff;
+      color: #4338ca;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      margin-bottom: 8px;
+    }
+    .member-school {
+      font-size: 13px;
+      color: #64748b;
+      line-height: 1.4;
+    }
+    .about-nav-link {
+      color: #64748b;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      padding: 6px 12px;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+    .about-nav-link:hover, .about-nav-link.active {
+      color: #2563eb;
+      background: #eff6ff;
+    }
+  </style>
+</head>
+<body class="mathfix-home">
+  <nav class="nav wrap">
+    <a class="brand" href="index.html"><b>✦</b> MATHFIX <span>AI</span></a>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <a href="index.html" class="about-nav-link">Trang chủ</a>
+      <a href="about.html" class="about-nav-link active">Giới thiệu</a>
+      <a href="dashboard.html" class="btn small" style="margin-left:8px;">Vào phòng học ↗</a>
+    </div>
+  </nav>
+
+  <main class="about-page">
+    <div class="about-header">
+      <div class="contest-badge">
+        🏆 Cuộc thi Sáng tạo trẻ Quốc gia · Lĩnh vực Trí tuệ Nhân tạo 2026
+      </div>
+      <h1>Dự án <span>MATHFIX AI</span></h1>
+      <p>Trợ lý học tập thông minh ứng dụng Thị giác máy tính (Computer Vision) và Trí tuệ nhân tạo thế hệ mới (AI Reasoning), hỗ trợ học sinh THCS phát hiện lỗi sai từng bước và xây dựng lộ trình ôn tập cá nhân hóa.</p>
+    </div>
+
+    <!-- KHỐI THÀNH VIÊN DỰ ÁN -->
+    <section class="section-box">
+      <div class="section-title">
+        <span>👥</span> Nhóm tác giả dự án
+      </div>
+      <div class="members-grid">
+        <!-- Thành viên 1 -->
+        <article class="member-card">
+          <div class="member-avatar">ND</div>
+          <div class="member-name">Nguyễn Lưu Nghi Dung</div>
+          <div class="member-class">Lớp 8TH4</div>
+          <div class="member-school">Trường TH Thực Hành Sài Gòn<br>Tp. Hồ Chí Minh</div>
+        </article>
+
+        <!-- Thành viên 2 -->
+        <article class="member-card">
+          <div class="member-avatar">QV</div>
+          <div class="member-name">Nguyễn Văn Quang Vinh</div>
+          <div class="member-class">Lớp 6A02T</div>
+          <div class="member-school">Trường TH Thực Hành Sài Gòn<br>Tp. Hồ Chí Minh</div>
+        </article>
+
+        <!-- Thành viên 3 -->
+        <article class="member-card">
+          <div class="member-avatar">GB</div>
+          <div class="member-name">Đỗ Trương Gia Bảo</div>
+          <div class="member-class">Lớp 6A6</div>
+          <div class="member-school">Trường THCS Hoa Lư<br>Tp. Hồ Chí Minh</div>
+        </article>
+      </div>
+    </section>
+
+    <!-- KHỐI MỤC TIÊU DỰ ÁN -->
+    <section class="section-box">
+      <div class="section-title">
+        <span>💡</span> Mục tiêu và Giá trị mang lại
+      </div>
+      <p style="color:#475569; font-size:15px; line-height:1.7; margin-bottom:12px;">
+        Học sinh THCS khi tự học Toán thường gặp khó khăn: không biết mình làm sai ở bước nào, vì sao sai, và nên làm bài tập nào tiếp theo để bù đắp kiến thức bị hổng.
+      </p>
+      <p style="color:#475569; font-size:15px; line-height:1.7; margin-bottom:12px;">
+        <strong>MATHFIX AI</strong> ra đời với mục tiêu:
+      </p>
+      <ul style="color:#475569; font-size:15px; line-height:1.8; padding-left:24px;">
+        <li><strong>Đọc bài giải tự nhiên:</strong> Tự động nhận diện chữ viết tay và biểu thức toán học trực tiếp từ ảnh chụp.</li>
+        <li><strong>Soi lỗi sai từng bước:</strong> Không chỉ đưa ra đáp số cuối cùng mà chỉ rõ sai ở bước biến đổi nào, kèm lời giải thích 100% bằng tiếng Việt.</li>
+        <li><strong>Lộ trình luyện tập thích ứng (4 câu):</strong> Tạo 1 câu củng cố nền tảng, 2 câu cùng mức độ và 1 câu nâng cao để học sinh khắc phục dứt điểm lỗi sai.</li>
+        <li><strong>Cơ chế phản hồi đa chiều:</strong> Nút thẩm định lại <em>"AI chỉ sai rồi"</em> giúp kiểm tra độc lập, rèn luyện tư duy phản biện cho học sinh.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="wrap mathfix-footer">
+    <a class="brand" href="index.html"><b>✦</b> MATHFIX <span>AI</span></a>
+    <p>Cuộc thi Sáng tạo trẻ Quốc gia 2026 · Nhóm tác giả: Nghi Dung — Quang Vinh — Gia Bảo</p>
+  </footer>
+</body>
+</html>
