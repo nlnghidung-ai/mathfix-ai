@@ -287,79 +287,254 @@
       text-rendering: auto;
     }
 
-    /* GIAO DIỆN AUTH: NÚT GOOGLE & THÔNG TIN HỌC SINH */
-    .user-profile-nav {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .user-pill {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: #f1f5f9;
-      padding: 4px 12px 4px 6px;
-      border-radius: 20px;
-      border: 1px solid #e2e8f0;
-    }
-    .user-avatar {
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
-      object-fit: cover;
-    }
-    .user-name {
-      font-size: 13px;
-      font-weight: 600;
-      color: #1e293b;
-      max-width: 120px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .btn-google-login {
+    /* GIAO DIỆN AUTH: NÚT ĐĂNG NHẬP HOẶC AVATAR TRÒN CÓ MENU ĐỔ XUỐNG */
+    .btn-open-login {
       display: inline-flex;
       align-items: center;
       gap: 8px;
       background: #ffffff;
       color: #374151;
       border: 1px solid #d1d5db;
-      padding: 6px 14px;
-      border-radius: 8px;
+      padding: 7px 16px;
+      border-radius: 999px;
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
       box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     }
-    .btn-google-login:hover {
+    .btn-open-login:hover {
       background: #f9fafb;
       border-color: #9ca3af;
     }
-    .btn-history-nav {
-      background: #eff6ff;
-      color: #2563eb;
-      border: 1px solid #bfdbfe;
-      padding: 6px 12px;
-      border-radius: 8px;
+    .avatar-dropdown-wrapper {
+      position: relative;
+    }
+    .avatar-trigger-btn {
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      outline: none;
+    }
+    .user-avatar-circle {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2px solid #3b82f6;
+      object-fit: cover;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+      transition: transform 0.15s ease;
+    }
+    .avatar-trigger-btn:hover .user-avatar-circle {
+      transform: scale(1.06);
+    }
+    .user-dropdown-menu {
+      position: absolute;
+      top: 46px;
+      right: 0;
+      width: 230px;
+      background: #ffffff;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+      padding: 8px 0;
+      z-index: 500;
+      animation: fadeInMenu 0.15s ease;
+    }
+    @keyframes fadeInMenu {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .user-menu-header {
+      padding: 8px 16px 10px;
+    }
+    .user-menu-name {
+      display: block;
+      font-size: 14px;
+      color: #0f172a;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .user-menu-email {
+      display: block;
+      font-size: 12px;
+      color: #64748b;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-top: 2px;
+    }
+    .user-menu-divider {
+      height: 1px;
+      background: #f1f5f9;
+      margin: 4px 0;
+    }
+    .user-menu-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 9px 16px;
       font-size: 13px;
+      font-weight: 600;
+      color: #334155;
+      background: none;
+      border: none;
+      text-align: left;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .user-menu-item:hover {
+      background: #f8fafc;
+      color: #0f172a;
+    }
+    .user-menu-item.text-danger {
+      color: #ef4444;
+    }
+    .user-menu-item.text-danger:hover {
+      background: #fef2f2;
+    }
+
+    /* MODAL ĐĂNG NHẬP / ĐĂNG KÝ (Google hoặc Email + Mật khẩu) */
+    .login-modal {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .login-modal-box {
+      background: #ffffff;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 400px;
+      padding: 28px 24px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      position: relative;
+    }
+    .login-modal-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: #0f172a;
+      text-align: center;
+      margin-bottom: 6px;
+    }
+    .login-modal-sub {
+      font-size: 13px;
+      color: #64748b;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .btn-google-action {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: #ffffff;
+      color: #374151;
+      border: 1px solid #d1d5db;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 14px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     }
-    .btn-history-nav:hover {
-      background: #dbeafe;
+    .btn-google-action:hover {
+      background: #f9fafb;
+      border-color: #9ca3af;
     }
-    .btn-logout-nav {
-      background: transparent;
-      color: #64748b;
+    .auth-or-line {
+      display: flex;
+      align-items: center;
+      margin: 18px 0;
+      color: #94a3b8;
+      font-size: 12px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .auth-or-line::before, .auth-or-line::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #e2e8f0;
+    }
+    .auth-or-line span {
+      padding: 0 10px;
+    }
+    .auth-mode-tabs {
+      display: flex;
+      background: #f1f5f9;
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 16px;
+    }
+    .auth-mode-tab {
+      flex: 1;
+      padding: 8px 0;
       border: none;
+      background: none;
       font-size: 13px;
+      font-weight: 600;
+      color: #64748b;
+      border-radius: 8px;
       cursor: pointer;
-      padding: 6px 8px;
+      transition: all 0.2s;
     }
-    .btn-logout-nav:hover {
-      color: #ef4444;
+    .auth-mode-tab.active {
+      background: #ffffff;
+      color: #0f172a;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    }
+    .auth-input-group {
+      margin-bottom: 14px;
+    }
+    .auth-input-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 6px;
+    }
+    .auth-input-group input {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      font-size: 14px;
+      outline: none;
+      box-sizing: border-box;
+      transition: border-color 0.2s;
+    }
+    .auth-input-group input:focus {
+      border-color: #2563eb;
+    }
+    .btn-submit-auth {
+      width: 100%;
+      background: #2563eb;
+      color: #ffffff;
+      border: none;
+      padding: 11px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 6px;
+    }
+    .btn-submit-auth:hover {
+      background: #1d4ed8;
     }
 
     /* MODAL LỊCH SỬ HỌC TẬP */
@@ -490,12 +665,16 @@
   <nav class="nav wrap">
     <a class="brand" href="index.html"><b>✦</b> MATHFIX <span>AI</span></a>
     
-    <!-- KHU VỰC ĐĂNG NHẬP (Luôn hiển thị nút sẵn sàng, không bao giờ bị biến mất) -->
-    <div id="authNavArea">
-      <button class="btn-google-login" onclick="loginWithGoogle()" type="button">
-        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.04h3.88c2.27-2.09 3.665-5.17 3.665-9.14z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.04c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.13C3.26 21.43 7.33 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.28c-.25-.72-.38-1.49-.38-2.28s.13-1.56.38-2.28V6.59H1.25C.45 8.24 0 10.07 0 12s.45 3.76 1.25 5.41l4.03-3.13z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.57 1.25 6.59l4.03 3.13c.95-2.83 3.6-4.97 6.72-4.97z"/></svg>
-        Đăng nhập
-      </button>
+    <div style="display:flex; align-items:center; gap:16px;">
+      <a href="about.html" style="color:#64748b; font-size:13px; font-weight:600; text-decoration:none;">Giới thiệu 2026</a>
+      
+      <!-- KHU VỰC AUTH: NÚT ĐĂNG NHẬP HOẶC AVATAR TRÒN -->
+      <div id="authNavArea">
+        <button class="btn-open-login" onclick="openLoginModal()" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.04h3.88c2.27-2.09 3.665-5.17 3.665-9.14z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.04c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.13C3.26 21.43 7.33 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.28c-.25-.72-.38-1.49-.38-2.28s.13-1.56.38-2.28V6.59H1.25C.45 8.24 0 10.07 0 12s.45 3.76 1.25 5.41l4.03-3.13z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.57 1.25 6.59l4.03 3.13c.95-2.83 3.6-4.97 6.72-4.97z"/></svg>
+          Đăng nhập
+        </button>
+      </div>
     </div>
   </nav>
 
@@ -641,12 +820,50 @@
     </section>
   </main>
 
+  <!-- MODAL ĐĂNG NHẬP (GOOGLE HOẶC EMAIL + PASSWORD) -->
+  <div id="loginModal" class="login-modal hidden">
+    <div class="login-modal-box">
+      <button class="btn-close-modal" style="position:absolute; top:16px; right:16px;" onclick="closeLoginModal()">✕</button>
+      <div class="login-modal-title">Tài khoản MathFix</div>
+      <div class="login-modal-sub">Đăng nhập để tự động lưu lịch sử học tập</div>
+
+      <!-- Đăng nhập 1-chạm Google -->
+      <button class="btn-google-action" onclick="loginWithGoogle()" type="button">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.04h3.88c2.27-2.09 3.665-5.17 3.665-9.14z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.04c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.13C3.26 21.43 7.33 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.28c-.25-.72-.38-1.49-.38-2.28s.13-1.56.38-2.28V6.59H1.25C.45 8.24 0 10.07 0 12s.45 3.76 1.25 5.41l4.03-3.13z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.57 1.25 6.59l4.03 3.13c.95-2.83 3.6-4.97 6.72-4.97z"/></svg>
+        Tiếp tục với Google
+      </button>
+
+      <div class="auth-or-line">
+        <span>hoặc nhập tài khoản</span>
+      </div>
+
+      <!-- Tab Đăng nhập / Đăng ký email -->
+      <div class="auth-mode-tabs">
+        <button id="tabLogin" class="auth-mode-tab active" onclick="setAuthMode('login')">Đăng nhập</button>
+        <button id="tabRegister" class="auth-mode-tab" onclick="setAuthMode('register')">Đăng ký mới</button>
+      </div>
+
+      <!-- Form nhập Email + Mật khẩu -->
+      <form onsubmit="loginWithEmail(event)">
+        <div class="auth-input-group">
+          <label for="authEmail">Email học sinh</label>
+          <input type="email" id="authEmail" placeholder="vd: hocsinh@gmail.com" required>
+        </div>
+        <div class="auth-input-group">
+          <label for="authPassword">Mật khẩu</label>
+          <input type="password" id="authPassword" placeholder="Nhập ít nhất 6 ký tự" minlength="6" required>
+        </div>
+        <button id="btnSubmitEmailAuth" class="btn-submit-auth" type="submit">Đăng nhập</button>
+      </form>
+    </div>
+  </div>
+
   <!-- MODAL XEM LỊCH SỬ HỌC TẬP -->
   <div id="historyModal" class="history-modal hidden">
     <div class="history-modal-box">
       <div class="history-modal-head">
         <h3>📜 Lịch sử học tập của bạn</h3>
-        <button id="btnCloseHistoryModal" class="btn-close-modal" type="button" onclick="document.getElementById('historyModal').classList.add('hidden')">✕</button>
+        <button class="btn-close-modal" type="button" onclick="document.getElementById('historyModal').classList.add('hidden')">✕</button>
       </div>
       <div class="history-tabs">
         <button class="history-tab-btn active" data-type="analysis" type="button">📝 Bài đã phân tích</button>
@@ -658,11 +875,8 @@
     </div>
   </div>
 
-  <!-- Thư viện Supabase JS qua CDN Unpkg (Tải siêu nhanh và không bị chặn tại VN) -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <!-- File xử lý Đăng nhập Google & Lưu lịch sử -->
-  <script src="auth.js?v=3"></script>
-
+  <script src="auth.js?v=4"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
   <script>window.LEARNING_DEMO_MODE = new URLSearchParams(location.search).has('demo');</script>
   <script src="domain.js?v=6"></script>
