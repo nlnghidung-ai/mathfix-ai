@@ -142,7 +142,29 @@
 
     .level-tag.easier { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
 
-    /* THẺ BÀI GIẢNG YOUTUBE Ở BƯỚC 1 */
+    /* NÚT "PHÂN TÍCH BÀI" NỔI BẬT TRÊN THANH TIÊU ĐỀ */
+    .btn-nav-analyze {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, #2563eb, #3b82f6);
+      color: #ffffff !important;
+      border: none;
+      padding: 7px 15px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+    }
+    .btn-nav-analyze:hover {
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+    }
+
     .theory-actions {
       display: flex;
       flex-direction: column;
@@ -504,8 +526,12 @@
   <nav class="nav wrap">
     <a class="brand" href="index.html"><b>✦</b> MATHFIX <span>AI</span></a>
     
-    <div style="display:flex; align-items:center; gap:16px;">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <!-- NÚT PHÂN TÍCH BÀI: BẤM LÀ QUAY VỀ MÀN HÌNH CHỤP/TẢI ẢNH MỚI -->
+      <button id="navNewAnalyzeBtn" class="btn-nav-analyze" type="button" onclick="goToUploadScreen()">✨ Phân tích bài</button>
+      
       <a id="navAboutLink" href="about.html" style="color:#64748b; font-size:13px; font-weight:600; text-decoration:none;">Giới thiệu</a>
+      
       <div id="authNavArea">
         <button class="btn-open-login" onclick="openLoginModal()" type="button">
           <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.04h3.88c2.27-2.09 3.665-5.17 3.665-9.14z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.04c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.13C3.26 21.43 7.33 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.28c-.25-.72-.38-1.49-.38-2.28s.13-1.56.38-2.28V6.59H1.25C.45 8.24 0 10.07 0 12s.45 3.76 1.25 5.41l4.03-3.13z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.57 1.25 6.59l4.03 3.13c.95-2.83 3.6-4.97 6.72-4.97z"/></svg>
@@ -742,10 +768,10 @@
   <script src="auth.js?v=6"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
   <script>window.LEARNING_DEMO_MODE = new URLSearchParams(location.search).has('demo');</script>
-  <script src="domain.js?v=13"></script>
-  <script src="mock-analysis-service.js?v=13"></script>
-  <script src="vision-analysis.js?v=13"></script>
-  <script src="learning-path.js?v=13"></script>
+  <script src="domain.js?v=14"></script>
+  <script src="mock-analysis-service.js?v=14"></script>
+  <script src="vision-analysis.js?v=14"></script>
+  <script src="learning-path.js?v=14"></script>
 
   <script>
     document.querySelectorAll('.history-tab-btn').forEach(btn => {
