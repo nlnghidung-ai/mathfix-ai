@@ -1,18 +1,21 @@
 // Chỉ thị 0: Đọc nội dung & KIỂM ĐỊNH PHẠM VI (Đại số 6, 7, 8, 9 GDPT 2018)
+// ĐẶC BIỆT: Ở bước này bắt buộc xuất văn bản gõ phím thông thường, KHÔNG dùng mã LaTeX
 const scanInstructions = `Bạn là trợ lý đọc ảnh bài làm học sinh cho dự án MathFix AI.
 NHIỆM VỤ 1: Đọc trung thực nguyên văn:
 - Đề bài bài toán trong ảnh.
 - Từng bước giải hoặc bài làm của học sinh.
 
-NHIỆM VỤ 2: KIỂM ĐỊNH PHẠM VI CHƯƠNG TRÌNH (Chỉ chấp nhận ĐẠI SỐ THCS LỚP 6, 7, 8, 9 theo Chương trình GDPT 2018 Việt Nam):
-- ĐƯỢC CHẤP NHẬN (isSupportedScope: true):
-  + Lớp 6: Số tự nhiên, luỹ thừa, chia hết, số nguyên, phân số, số thập phân.
-  + Lớp 7: Số hữu tỉ, số thực, tỉ lệ thức, đại lượng tỉ lệ, biểu thức đại số, đa thức một biến.
-  + Lớp 8: Đa thức nhiều biến, hằng đẳng thức đáng nhớ, phân tích nhân tử, phân thức đại số, phương trình bậc nhất một ẩn.
-  + Lớp 9: Căn bậc hai, căn bậc ba; Hệ hai phương trình bậc nhất hai ẩn; Phương trình bậc hai một ẩn; Định lý Vi-et; Bất đẳng thức & bất phương trình bậc nhất một ẩn.
-- TỪ CHỐI (isSupportedScope: false): Nếu thuộc Hình học, Xác suất - Thống kê, Toán suy luận logic/đố mẹo ngoài lề, Toán Tiểu học, Toán Cấp 3 THPT, hoặc các môn học khác. Nêu rõ lý do lịch sự tại trường scopeReason.
+QUY TẮC HIỂN THỊ VĂN BẢN ĐỂ HỌC SINH TỰ CHỈNH SỬA (BẮT BUỘC):
+Để học sinh có thể đọc và dùng bàn phím thông thường tự chỉnh sửa lại, đề bài (problemText) và bài làm (studentWorkText) BẮT BUỘC viết dưới dạng VĂN BẢN GÕ PHÍM BÌNH THƯỜNG, TUYỆT ĐỐI KHÔNG DÙNG MÃ LỆNH LATEX VÀ KHÔNG KẸP DẤU $:
+- Lũy thừa viết dạng: x^2, x^12, (x+1)^3.
+- Phân số viết dạng gạch chéo: a/b, 3/4, (x+1)/(x-2).
+- Dấu căn viết dạng: căn(x) hoặc căn(2x+1).
+- Phép nhân viết dạng: * hoặc ., phép chia viết dạng: /.
 
-QUY TẮC HIỂN THỊ TOÁN HỌC: Mọi biểu thức toán viết dưới dạng LaTeX kẹp giữa cặp dấu $, ví dụ: $x^2$, $\\frac{a}{b}$, $\\sqrt{x}$.
+NHIỆM VỤ 2: KIỂM ĐỊNH PHẠM VI CHƯƠNG TRÌNH (Chỉ chấp nhận ĐẠI SỐ THCS LỚP 6, 7, 8, 9 theo Chương trình GDPT 2018 Việt Nam):
+- ĐƯỢC CHẤP NHẬN (isSupportedScope: true): Đại số/Số học lớp 6, 7, 8, 9.
+- TỪ CHỐI (isSupportedScope: false): Nếu thuộc Hình học, Xác suất - Thống kê, Toán suy luận logic ngoài lề, Toán Tiểu học, Toán Cấp 3 THPT, hoặc môn khác. Nêu lý do tại scopeReason.
+
 QUY TẮC NGÔN NGỮ: Toàn bộ nội dung BẮT BUỘC 100% BẰNG TIẾNG VIỆT.
 
 Trả về duy nhất JSON đúng cấu trúc:
@@ -21,15 +24,15 @@ Trả về duy nhất JSON đúng cấu trúc:
   "needsRetake": false,
   "isSupportedScope": true hoặc false,
   "scopeReason": "Lý do nếu bài toán nằm ngoài phạm vi Đại số 6, 7, 8, 9...",
-  "problemText": "Nguyên văn đề bài đọc được",
-  "studentWorkText": "Nguyên văn bài làm của học sinh",
+  "problemText": "Nguyên văn đề bài dạng gõ phím thông thường",
+  "studentWorkText": "Nguyên văn bài làm dạng gõ phím thông thường",
   "message": ""
 }
 Nếu ảnh quá mờ: readable:false, needsRetake:true, message:"Ảnh quá mờ hoặc thiếu sáng, hãy chụp lại."`;
 
 // Chỉ thị 1: Phân tích bài làm (Kiểm tra đề bài + Soi bước giải chuẩn GDPT 2018)
 const analyzeInstructions = `Bạn là chuyên gia sư phạm phân tích bài làm Đại số THCS (Lớp 6, 7, 8, 9) theo Chương trình GDPT 2018 Việt Nam.
-Dữ liệu đầu vào gồm Đề bài và Bài làm của học sinh (đã được học sinh kiểm tra và xác nhận).
+Dữ liệu đầu vào gồm Đề bài và Bài làm của học sinh (đã được học sinh kiểm tra và tự chỉnh sửa bằng văn bản gõ phím).
 
 QUY TRÌNH PHÂN TÍCH BẮT BUỘC (2 VIỆC):
 VIỆC 1: KIỂM TRA TÍNH ĐÚNG/SAI CỦA ĐỀ BÀI:
@@ -42,7 +45,7 @@ VIỆC 2: PHÂN TÍCH TỪNG BƯỚC GIẢI CỦA HỌC SINH:
 - LÀM TẮT / BỎ BƯỚC: Nếu học sinh tính đúng nhưng làm tắt, nhảy bước quan trọng (ví dụ: chuyển vế không đổi dấu rõ ràng, bỏ qua bước đặt điều kiện xác định, bỏ bước tìm mẫu thức chung...), hãy chỉ rõ học sinh đã thiếu bước biến đổi nào và hướng dẫn bổ sung.
 - TÍNH GIAO HOÁN & ĐỒNG NHẤT TOÁN HỌC: Tuyệt đối KHÔNG máy móc bắt bẻ thứ tự các thừa số hay số hạng. Ví dụ: (x+2)(x+3) và (x+3)(x+2), hay 2x+3 và 3+2x là HOÀN TOÀN ĐÚNG về mặt toán học theo tính chất giao hoán. Không được phán đoán sai vì khác trật tự trình bày.
 
-QUY TẮC HIỂN THỊ TOÁN HỌC: Mọi công thức toán viết dạng LaTeX kẹp giữa cặp dấu $, ví dụ: $x^2$, $\\frac{a}{b}$, $\\sqrt{x}$.
+QUY TẮC HIỂN THỊ TOÁN HỌC (Ở KẾT QUẢ PHÂN TÍCH): Mọi công thức toán viết dạng LaTeX kẹp giữa cặp dấu $, ví dụ: $x^2$, $\\frac{a}{b}$, $\\sqrt{x}$ để KaTeX vẽ đẹp.
 QUY TẮC NGÔN NGỮ: Toàn bộ nội dung BẮT BUỘC 100% TIẾNG VIỆT.
 
 Trả về duy nhất JSON đúng cấu trúc:
@@ -101,7 +104,7 @@ QUY TẮC:
 Trả về duy nhất JSON:
 {"exercises":[{"level":"Dễ hơn","question":"","answer":"","solution":""}]}`;
 
-// Chỉ thị 2.5: CHẤM BÀI TỰ LUẬN TỪNG BƯỚC CHO HỌC SINH (Học sinh gõ bàn phím tự nhiên 2-4 dòng)
+// Chỉ thị 2.5: Chấm bài giải tự luận từng bước của học sinh
 const gradePracticeInstructions = `Bạn là giáo viên chấm bài thi Đại số THCS.
 Học sinh nộp các bước giải tự luận (gõ bằng bàn phím thông thường, không dùng mã LaTeX, có thể viết liền hoặc xuống dòng).
 Nhiệm vụ: Đọc và chấm toàn bộ các bước biến đổi của học sinh:
@@ -258,7 +261,7 @@ async function requestAI(input) {
   return parseJson(extractText(await response.json()));
 }
 
-// BƯỚC 0: Quét chữ và kiểm định Đại số THCS lớp 6, 7, 8, 9
+// BƯỚC 0: Quét chữ dạng văn bản thông thường (không LaTeX) và kiểm định Đại số 6-9
 export async function scanImage(image) {
   if (typeof image !== 'string' || !image.startsWith('data:image/')) throw new Error('Ảnh tải lên không hợp lệ.');
   const requestCode = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -268,10 +271,10 @@ export async function scanImage(image) {
   ] }]);
 }
 
-// BƯỚC 1: Phân tích bài làm (Dùng nội dung học sinh đã chỉnh sửa)
+// BƯỚC 1: Phân tích bài làm (Dùng nội dung học sinh đã tự chỉnh sửa)
 export async function analyzeImage(image, transcribed) {
   const requestCode = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  const contextNote = transcribed ? `\nNỘI DUNG ĐÃ ĐỐI CHIẾU VÀ ĐƯỢC HỌC SINH TỰ CHỈNH SỬA:\n- Đề bài: ${transcribed.problemText}\n- Bài làm: ${transcribed.studentWorkText}\n(Hãy ưu tiên bám sát văn bản đã chỉnh sửa này để giải toán)\n` : '';
+  const contextNote = transcribed ? `\nNỘI DUNG ĐÃ ĐỐI CHIẾU VÀ ĐƯỢC HỌC SINH TỰ CHỈNH SỬA BẰNG VĂN BẢN GÕ PHÍM:\n- Đề bài: ${transcribed.problemText}\n- Bài làm: ${transcribed.studentWorkText}\n(Hãy bám sát nội dung đã sửa này để kiểm tra đề và giải từng bước)\n` : '';
   
   const userContent = [{ type: 'input_text', text: `${analyzeInstructions}${contextNote}\nMã phiên: ${requestCode}.` }];
   if (typeof image === 'string' && image.startsWith('data:image/')) {
