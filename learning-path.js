@@ -184,7 +184,6 @@ $('#analyzeBtn').onclick=async()=>{
     const scopeAlert = $('#outOfScopeAlert');
     const proceedBtn = $('#btnProceedAnalyze');
 
-    // NẾU BÀI NẰM NGOÀI PHẠM VI (Môn khác hoặc Toán THPT Cấp 3):
     if (scanRes.isSupportedScope === false) {
       scopeAlert.classList.remove('hidden');
       $('#scopeAlertMsg').textContent = `${scanRes.scopeReason || 'Nội dung này không thuộc phạm vi môn Toán THCS.'} MathFix AI chỉ hỗ trợ môn Toán cấp THCS (Lớp 6, 7, 8, 9). Không hỗ trợ Toán THPT hay các môn học khác. Bạn vui lòng chọn bài tập Toán THCS phù hợp nhé!`;
@@ -307,7 +306,7 @@ function showResult(result){
   $('#resultPanel').classList.remove('hidden');
   $('#resultImage').src=imageUrl;
 
-  // 1. KIỂM TRA ĐỀ BÀI: Nếu đề bài sai thì hiện bảng cảnh báo đỏ
+  // 1. KIỂM ĐỊNH ĐỀ BÀI: Nếu đề bài sai thì hiện bảng cảnh báo đỏ
   const invalidBanner = $('#problemInvalidBanner');
   if (result.isProblemValid === false) {
     invalidBanner.classList.remove('hidden');
@@ -318,7 +317,7 @@ function showResult(result){
     invalidBanner.classList.add('hidden');
   }
 
-  // 2. KIỂM TRA HƯỚNG DẪN GIẢI MẪU: Nếu học sinh để trống bài làm, hiện khung giải mẫu
+  // 2. HƯỚNG DẪN GIẢI MẪU: Nếu học sinh để trống bài làm, hiện khung giải mẫu
   const modelBox = $('#modelSolutionBox');
   const firstAnalysis = result.analysisSets?.[0] || {};
   if (firstAnalysis.modelSolution) {
@@ -343,7 +342,7 @@ function showAnalysis(index){
   $('#problemNavigator').innerHTML=sets.length>1?`<div class="problem-nav"><span class="problem-nav-label">Ảnh có ${sets.length} bài cần xem lại. Chọn một bài:</span>${sets.map((item,itemIndex)=>`<button class="problem-tab ${itemIndex===index?'active':''}" data-analysis="${itemIndex}">${item.title||`Bài ${itemIndex+1}`}</button>`).join('')}</div>`:'';
   $$('.problem-tab').forEach(button=>button.onclick=()=>showAnalysis(Number(button.dataset.analysis)));
   
-  // HIỂN THỊ CÁC THẺ LỖI SAI (Nếu học sinh có bài làm)
+  // HIỂN THỊ CÁC THẺ LỖI SAI KÈM NÚT PHẢN BIỆN
   if (r.learningErrors && r.learningErrors.length > 0) {
     $('#errorList').innerHTML=r.learningErrors.map((e, errIdx)=>`
       <article class="error-card" id="error-card-${errIdx}">
@@ -355,15 +354,28 @@ function showAnalysis(index){
         </div>
         <p><b>Vị trí:</b> ${e.position}. ${e.explanation}</p>
         <div class="tip">💡 ${e.tip}</div>
-        <div class="recheck-box">
-          <button class="btn-recheck-step" data-index="${errIdx}" type="button">🤔 AI chỉ sai rồi (Kiểm tra lại)</button>
+        
+        <!-- HỘP PHẢN BIỆN CỦA HỌC SINH -->
+        <div class="recheck-box" id="recheck-box-${errIdx}">
+          <button class="btn-recheck-step" data-index="${errIdx}" type="button">🤔 Phản biện (AI chỉ sai rồi)</button>
+          
+          <!-- KHUNG NHẬP NỘI DUNG PHẢN BIỆN (Mặc định ẩn) -->
+          <div class="recheck-input-box hidden" id="recheck-input-box-${errIdx}">
+            <label>💬 Nhập lập luận/cách giải thích của bạn:</label>
+            <textarea class="recheck-argument-text" id="recheck-text-${errIdx}" placeholder="Ví dụ: Em áp dụng tính chất giao hoán (x+1)(x+3) = (x+3)(x+1) hoặc em biến đổi theo cách..."></textarea>
+            <div class="recheck-actions">
+              <button class="btn-cancel-recheck" data-index="${errIdx}" type="button">Hủy</button>
+              <button class="btn-submit-recheck" data-index="${errIdx}" type="button">Gửi phản biện cho AI</button>
+            </div>
+          </div>
+
+          <!-- KẾT QUẢ PHÂN ĐỊNH 3 TRƯỜNG HỢP CỦA AI -->
           <div class="recheck-feedback hidden" id="recheck-feedback-${errIdx}"></div>
         </div>
       </article>
     `).join('');
     bindRecheckEvents();
   } else {
-    // Không có lỗi sai hoặc học sinh yêu cầu giải mẫu
     $('#errorList').innerHTML = `
       <article class="error-card" style="border: 2px solid #86efac; background: #f0fdf4;">
         <span class="severity" style="background:#10b981; color:#fff;">✓ Kiến thức chuẩn</span>
@@ -377,41 +389,75 @@ function showAnalysis(index){
   renderMath($('#resultPanel'));
 }
 
-// BƯỚC XỬ LÝ SỰ KIỆN: KHI HỌC SINH BẤM "AI CHỈ SAI RỒI"
+// BƯỚC XỬ LÝ SỰ KIỆN PHẢN BIỆN 2 CHIỀU
 function bindRecheckEvents(){
+  // 1. Bấm mở khung gõ phản biện
   $$('.btn-recheck-step').forEach(btn => {
+    btn.onclick = () => {
+      const idx = btn.dataset.index;
+      $(`#recheck-input-box-${idx}`).classList.remove('hidden');
+      btn.classList.add('hidden');
+    };
+  });
+
+  // 2. Bấm hủy phản biện
+  $$('.btn-cancel-recheck').forEach(btn => {
+    btn.onclick = () => {
+      const idx = btn.dataset.index;
+      $(`#recheck-input-box-${idx}`).classList.add('hidden');
+      $(`.btn-recheck-step[data-index="${idx}"]`).classList.remove('hidden');
+    };
+  });
+
+  // 3. Gửi lập luận phản biện cho AI
+  $$('.btn-submit-recheck').forEach(btn => {
     btn.onclick = async () => {
       const idx = Number(btn.dataset.index);
       const stepError = currentAnalysis.learningErrors[idx];
       const card = $(`#error-card-${idx}`);
       const feedback = $(`#recheck-feedback-${idx}`);
-      
+      const inputBox = $(`#recheck-input-box-${idx}`);
+      const argumentText = $(`#recheck-text-${idx}`).value.trim();
+
+      if (!argumentText) {
+        alert('Vui lòng nhập lập luận hoặc lý do vì sao bạn cho rằng bước này bạn làm đúng.');
+        return;
+      }
+
       btn.disabled = true;
-      btn.textContent = '⏳ AI đang suy nghĩ lại và kiểm tra tính giao hoán…';
+      btn.textContent = '⏳ AI đang suy nghĩ và đối chiếu lập luận…';
 
       try {
         const res = await HomeworkAnalysisService.recheckStep({
           problemText: currentTranscribed?.problemText || '',
-          stepError: stepError
+          stepError: stepError,
+          studentArgument: argumentText
         });
 
+        inputBox.classList.add('hidden');
         feedback.classList.remove('hidden');
 
-        if (res.isStudentCorrect) {
+        // PHÂN ĐỊNH 3 TRƯỜNG HỢP:
+        if (res.verdictType === 'ai_wrong') {
+          // Trường hợp 1: AI sai thật, học sinh phản biện đúng
           card.classList.add('acknowledged-correct');
           card.querySelector('.severity').textContent = '✓ Bạn làm đúng';
-          btn.textContent = '✓ AI xác nhận bước này hợp lệ';
-          feedback.className = 'recheck-feedback correct';
+          feedback.className = 'recheck-feedback ai_wrong';
           feedback.innerHTML = `<strong>🎉 ${res.verdictTitle}:</strong> ${res.explanation}`;
+        } else if (res.verdictType === 'both_flawed') {
+          // Trường hợp 2: Cả 2 cùng có thiếu sót
+          feedback.className = 'recheck-feedback both_flawed';
+          feedback.innerHTML = `<strong>💡 ${res.verdictTitle}:</strong> ${res.explanation}`;
         } else {
-          btn.textContent = 'Đã kiểm tra lại';
-          feedback.className = 'recheck-feedback wrong';
+          // Trường hợp 3: Học sinh hiểu sai, AI giữ vững lập trường
+          feedback.className = 'recheck-feedback student_wrong';
           feedback.innerHTML = `<strong>⚠️ ${res.verdictTitle}:</strong> ${res.explanation}`;
         }
+
         renderMath(feedback);
       } catch (err) {
         btn.disabled = false;
-        btn.textContent = '🤔 AI chỉ sai rồi (Kiểm tra lại)';
+        btn.textContent = 'Gửi phản biện cho AI';
         alert('Không thể thẩm định lại bước này. Vui lòng thử lại.');
       }
     };
