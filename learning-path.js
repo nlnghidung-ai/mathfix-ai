@@ -6,21 +6,15 @@ let currentTranscribed=null;
 function toPlainText(str) {
   if (!str) return '';
   return String(str)
-    // Chuyển phân số LaTeX \frac{a}{b} -> (a/b)
     .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1/$2)')
-    // Chuyển căn bậc cao \sqrt[n]{x} -> căn bậc n(x)
     .replace(/\\sqrt\[(\d+)\]\{([^}]+)\}/g, 'căn bậc $1($2)')
-    // Chuyển căn bậc hai \sqrt{x} -> căn(x)
     .replace(/\\sqrt\{([^}]+)\}/g, 'căn($1)')
-    // Chuyển các phép toán LaTeX sang ký tự bàn phím
     .replace(/\\times/g, '*')
     .replace(/\\div/g, ':')
     .replace(/\\pm/g, '±')
     .replace(/\\cdot/g, '*')
-    // Bỏ ngoặc nhọn ở số mũ và chỉ số dưới: x^{12} -> x^12
     .replace(/\^\{([^}]+)\}/g, '^$1')
     .replace(/_\{([^}]+)\}/g, '_$1')
-    // Xóa sạch toàn bộ dấu $ và gạch chéo ngược thừa
     .replace(/\$/g, '')
     .replace(/\\/g, '')
     .trim();
@@ -36,7 +30,6 @@ function renderMath(target){
         const textNodes = [];
         while (walker.nextNode()) {
           const parent = walker.currentNode.parentNode;
-          // Không đụng vào các ô nhập liệu textarea hoặc input
           if (parent && !['SCRIPT', 'STYLE', 'TEXTAREA', 'INPUT', 'PRE', 'CODE'].includes(parent.tagName) && !parent.closest('.katex')) {
             const val = walker.currentNode.nodeValue;
             if (val && (/\$([^$]+)\$/.test(val) || /\\(frac|sqrt|times|div|pm)/.test(val) || /\b[a-zA-Z0-9]\^\{?[0-9a-zA-Z+-]+\}?/.test(val))) {
@@ -166,7 +159,7 @@ $('#captureBtn').onclick=()=>{
   $('#cameraMode').classList.add('hidden');
 };
 
-// BƯỚC 1: BẤM NÚT ĐỌC BÀI TOÁN -> HIỂN THỊ DẠNG GÕ PHÍM THÔNG THƯỜNG TRONG 2 Ô TEXTAREA
+// BƯỚC 1: BẤM NÚT ĐỌC BÀI TOÁN -> KIỂM TRA PHẠM VI TOÁN THCS VÀ ĐỔ VÀO 2 Ô TEXTAREA
 $('#analyzeBtn').onclick=async()=>{
   if(cropper){
     const canvas = cropper.getCroppedCanvas({ maxWidth: 2048, maxHeight: 2048 });
@@ -177,23 +170,24 @@ $('#analyzeBtn').onclick=async()=>{
   $('.old-layout').classList.add('hidden');
   $('#confirmPanel').classList.add('hidden');
   $('#loadingPanel').classList.remove('hidden');
-  $('#loadingText').textContent = 'Đang đọc bài toán trong ảnh…';
-  $('#loadingSubtext').textContent = 'AI đang nhận diện chữ viết và kiểm tra phạm vi Đại số 6-9.';
+  $('#loadingText').textContent = 'Đang đọc nội dung trong ảnh…';
+  $('#loadingSubtext').textContent = 'AI đang nhận diện chữ viết và kiểm tra phạm vi môn Toán THCS.';
 
   try {
     const scanRes = await HomeworkAnalysisService.scan(imageUrl);
     currentTranscribed = scanRes;
     
-    // ĐỔ VĂN BẢN ĐÃ LÀM SẠCH VÀO 2 Ô TEXTAREA (Hoàn toàn bằng ký tự gõ phím bình thường)
+    // Gán dữ liệu dạng văn bản thông thường (Nếu ảnh không có bài làm, ô bên dưới sẽ rỗng 100%)
     $('#scannedProblem').value = toPlainText(scanRes.problemText || '');
     $('#scannedStudentWork').value = toPlainText(scanRes.studentWorkText || '');
     
     const scopeAlert = $('#outOfScopeAlert');
     const proceedBtn = $('#btnProceedAnalyze');
 
+    // NẾU BÀI NẰM NGOÀI PHẠM VI (Môn khác hoặc Toán THPT Cấp 3):
     if (scanRes.isSupportedScope === false) {
       scopeAlert.classList.remove('hidden');
-      $('#scopeAlertMsg').textContent = `${scanRes.scopeReason || 'Dạng bài này hiện chưa nằm trong phạm vi hỗ trợ.'} MathFix AI phiên bản hiện tại chỉ tập trung chuyên sâu vào Đại số THCS lớp 6, 7, 8, 9 (Chương trình GDPT 2018). Bạn hãy chọn một bài toán đại số phù hợp nhé!`;
+      $('#scopeAlertMsg').textContent = `${scanRes.scopeReason || 'Nội dung này không thuộc phạm vi môn Toán THCS.'} MathFix AI chỉ hỗ trợ môn Toán cấp THCS (Lớp 6, 7, 8, 9). Không hỗ trợ Toán THPT hay các môn học khác. Bạn vui lòng chọn bài tập Toán THCS phù hợp nhé!`;
       proceedBtn.disabled = true;
       proceedBtn.style.opacity = '0.4';
       proceedBtn.style.cursor = 'not-allowed';
@@ -251,7 +245,7 @@ $('#btnReupload').onclick=()=>{
   $('.old-layout').classList.remove('hidden');
 };
 
-// BƯỚC 2C: TIẾN HÀNH PHÂN TÍCH (LẤY VĂN BẢN HỌC SINH ĐÃ CHỈNH SỬA TRONG TEXTAREA)
+// BƯỚC 2C: TIẾN HÀNH PHÂN TÍCH (LẤY VĂN BẢN TRONG 2 Ô TEXTAREA)
 $('#btnProceedAnalyze').onclick=async()=>{
   if ($('#btnProceedAnalyze').disabled) return;
 
@@ -267,7 +261,7 @@ $('#btnProceedAnalyze').onclick=async()=>{
   $('#confirmPanel').classList.add('hidden');
   $('#loadingPanel').classList.remove('hidden');
   $('#loadingText').textContent = 'Đang phân tích bài toán…';
-  $('#loadingSubtext').textContent = 'AI đang kiểm tra tính đúng sai của đề bài và các bước biến đổi GDPT 2018.';
+  $('#loadingSubtext').textContent = 'AI đang kiểm tra tính đúng sai của đề bài và các bước giải.';
 
   try {
     const result = await HomeworkAnalysisService.analyze(imageUrl, currentTranscribed);
@@ -313,7 +307,7 @@ function showResult(result){
   $('#resultPanel').classList.remove('hidden');
   $('#resultImage').src=imageUrl;
 
-  // BẢNG CẢNH BÁO ĐỀ BÀI BỊ SAI
+  // 1. KIỂM TRA ĐỀ BÀI: Nếu đề bài sai thì hiện bảng cảnh báo đỏ
   const invalidBanner = $('#problemInvalidBanner');
   if (result.isProblemValid === false) {
     invalidBanner.classList.remove('hidden');
@@ -322,6 +316,17 @@ function showResult(result){
     renderMath(invalidBanner);
   } else {
     invalidBanner.classList.add('hidden');
+  }
+
+  // 2. KIỂM TRA HƯỚNG DẪN GIẢI MẪU: Nếu học sinh để trống bài làm, hiện khung giải mẫu
+  const modelBox = $('#modelSolutionBox');
+  const firstAnalysis = result.analysisSets?.[0] || {};
+  if (firstAnalysis.modelSolution) {
+    modelBox.classList.remove('hidden');
+    $('#modelSolutionContent').textContent = firstAnalysis.modelSolution;
+    renderMath(modelBox);
+  } else {
+    modelBox.classList.add('hidden');
   }
 
   showAnalysis(0);
@@ -338,25 +343,36 @@ function showAnalysis(index){
   $('#problemNavigator').innerHTML=sets.length>1?`<div class="problem-nav"><span class="problem-nav-label">Ảnh có ${sets.length} bài cần xem lại. Chọn một bài:</span>${sets.map((item,itemIndex)=>`<button class="problem-tab ${itemIndex===index?'active':''}" data-analysis="${itemIndex}">${item.title||`Bài ${itemIndex+1}`}</button>`).join('')}</div>`:'';
   $$('.problem-tab').forEach(button=>button.onclick=()=>showAnalysis(Number(button.dataset.analysis)));
   
-  // HIỂN THỊ CÁC THẺ LỖI
-  $('#errorList').innerHTML=r.learningErrors.map((e, errIdx)=>`
-    <article class="error-card" id="error-card-${errIdx}">
-      <span class="severity">Cần ôn lại</span>
-      <h3>${e.title}</h3>
-      <div class="work-compare">
-        <div><small>BẠN ĐÃ LÀM</small><b>${e.studentWork}</b></div>
-        <div><small>CÁCH BIẾN ĐỔI CHUẨN</small><b>${e.correction}</b></div>
-      </div>
-      <p><b>Vị trí:</b> ${e.position}. ${e.explanation}</p>
-      <div class="tip">💡 ${e.tip}</div>
-      <div class="recheck-box">
-        <button class="btn-recheck-step" data-index="${errIdx}" type="button">🤔 AI chỉ sai rồi (Kiểm tra lại)</button>
-        <div class="recheck-feedback hidden" id="recheck-feedback-${errIdx}"></div>
-      </div>
-    </article>
-  `).join('');
+  // HIỂN THỊ CÁC THẺ LỖI SAI (Nếu học sinh có bài làm)
+  if (r.learningErrors && r.learningErrors.length > 0) {
+    $('#errorList').innerHTML=r.learningErrors.map((e, errIdx)=>`
+      <article class="error-card" id="error-card-${errIdx}">
+        <span class="severity">Cần ôn lại</span>
+        <h3>${e.title}</h3>
+        <div class="work-compare">
+          <div><small>BẠN ĐÃ LÀM</small><b>${e.studentWork}</b></div>
+          <div><small>CÁCH BIẾN ĐỔI CHUẨN</small><b>${e.correction}</b></div>
+        </div>
+        <p><b>Vị trí:</b> ${e.position}. ${e.explanation}</p>
+        <div class="tip">💡 ${e.tip}</div>
+        <div class="recheck-box">
+          <button class="btn-recheck-step" data-index="${errIdx}" type="button">🤔 AI chỉ sai rồi (Kiểm tra lại)</button>
+          <div class="recheck-feedback hidden" id="recheck-feedback-${errIdx}"></div>
+        </div>
+      </article>
+    `).join('');
+    bindRecheckEvents();
+  } else {
+    // Không có lỗi sai hoặc học sinh yêu cầu giải mẫu
+    $('#errorList').innerHTML = `
+      <article class="error-card" style="border: 2px solid #86efac; background: #f0fdf4;">
+        <span class="severity" style="background:#10b981; color:#fff;">✓ Kiến thức chuẩn</span>
+        <h3>Phương pháp giải bài toán</h3>
+        <p>Bạn hãy theo dõi các bước giải mẫu bên trên và tự luyện tập 4 bài tương tự bên dưới nhé!</p>
+      </article>
+    `;
+  }
   
-  bindRecheckEvents();
   renderPath(r);
   renderMath($('#resultPanel'));
 }
@@ -523,7 +539,7 @@ function demoReview(){
     studyPlanner:{
       today: wrong.length ? `Làm lại ${wrong.length} bài chưa đạt điểm tối đa, chú ý không làm tắt bước.` : 'Làm thêm các bài toán cùng chủ đề để rèn luyện tốc độ.',
       tomorrow: `Ôn tiếp kiến thức ${currentAnalysis.knowledgePoint.name}.`,
-      review: 'Xem lại các quy tắc biến đổi và hằng đẳng thức/công thức đã dùng.'
+      review: 'Xem lại các quy tắc biến đổi và công thức toán THCS đã dùng.'
     }
   };
 }
