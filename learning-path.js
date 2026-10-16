@@ -20,7 +20,7 @@ function toPlainText(str) {
     .trim();
 }
 
-// BỘ VẼ CÔNG THỨC TOÁN HỌC (CHỈ DÙNG Ở MÀN HÌNH HIỂN THỊ KẾT QUẢ VÀ BÀI TẬP)
+// BỘ VẼ CÔNG THỨC TOÁN HỌC CHUẨN XÁC (KHÔNG BỊ LỆCH MẪU SỐ)
 function renderMath(target){
   const el = target || document.body;
   const run = () => {
@@ -32,7 +32,7 @@ function renderMath(target){
           const parent = walker.currentNode.parentNode;
           if (parent && !['SCRIPT', 'STYLE', 'TEXTAREA', 'INPUT', 'PRE', 'CODE'].includes(parent.tagName) && !parent.closest('.katex')) {
             const val = walker.currentNode.nodeValue;
-            if (val && (/\$([^$]+)\$/.test(val) || /\\(frac|sqrt|times|div|pm)/.test(val) || /\b[a-zA-Z0-9]\^\{?[0-9a-zA-Z+-]+\}?/.test(val))) {
+            if (val && (/\$([^$]+)\$/.test(val) || /\\(frac|dfrac|tfrac|sqrt|times|div|pm)/.test(val) || /\b[a-zA-Z0-9]\^\{?[0-9a-zA-Z+-]+\}?/.test(val))) {
               textNodes.push(walker.currentNode);
             }
           }
@@ -42,13 +42,17 @@ function renderMath(target){
           let text = node.nodeValue;
           if (!text) return;
 
-          text = text.replace(/(\\(?:frac\{[^}]+\}\{[^}]+\}|sqrt\{[^}]+\}|sqrt\[\d+\]\{[^}]+\}))/g, '$$$1$$');
+          // Chỉ bọc $ nếu phân số hoặc căn chưa nằm trong $...$
+          text = text.replace(/(^|[^\$])(\\(?:frac|dfrac|tfrac)\{[^{}]+\}\{[^{}]+\})/g, '$1$$$2$$');
+          text = text.replace(/(^|[^\$])(\\sqrt(?:\[\d+\])?\{[^{}]+\})/g, '$1$$$2$$');
 
+          // Render $$...$$ trước (dạng hiển thị khối)
           let html = text.replace(/\$\$([^$]+)\$\$/g, (_, math) => {
             try { return window.katex.renderToString(math.trim(), { displayMode: true, throwOnError: false }); }
             catch { return `$$${math}$$`; }
           });
 
+          // Render $...$ sau (dạng hiển thị nội dòng)
           html = html.replace(/\$([^$]+)\$/g, (_, math) => {
             try { return window.katex.renderToString(math.trim(), { displayMode: false, throwOnError: false }); }
             catch { return `$${math}$`; }
@@ -323,7 +327,7 @@ function showResult(result){
     invalidBanner.classList.add('hidden');
   }
 
-  // 2. HƯỚNG DẪN GIẢI MẪU: ẨN MẶC ĐỊNH, CHỈ HIỆN KHI BẤM NÚT "XEM LỜI GIẢI"
+  // 2. HƯỚNG DẪN GIẢI MẪU: ẨN MẶC ĐỊNH, CHỈ HIỆN KHI BẤM NÚT
   const modelBox = $('#modelSolutionBox');
   const modelContent = $('#modelSolutionContent');
   const toggleBtn = $('#toggleSolutionBtn');
@@ -333,17 +337,15 @@ function showResult(result){
   if (firstAnalysis.modelSolution) {
     modelBox.classList.remove('hidden');
     modelContent.textContent = firstAnalysis.modelSolution;
-    // Mặc định ẩn nội dung
     modelContent.classList.add('hidden');
     toggleBtn.textContent = '👁️ Xem lời giải ▼';
 
-    // Xử lý sự kiện bấm mở/đóng lời giải
     const handleToggle = () => {
       const isHidden = modelContent.classList.contains('hidden');
       if (isHidden) {
         modelContent.classList.remove('hidden');
         toggleBtn.textContent = 'Ẩn lời giải ▲';
-        renderMath(modelContent); // Vẽ công thức toán khi mở ra
+        renderMath(modelContent);
       } else {
         modelContent.classList.add('hidden');
         toggleBtn.textContent = '👁️ Xem lời giải ▼';
@@ -529,7 +531,7 @@ function practiceMarkup(items){
               <span class="question-text">${x.question.replace(/^\s*Câu\s*\d+\s*[:.)-]?\s*/i, '')}</span>
             </label>
             <div class="practice-solution-box">
-              <textarea class="practice-steps-textarea" placeholder="Gõ các bước giải của bạn vào đây (khoảng 2-4 dòng, gõ phím bình thường không cần gõ mã)..." rows="3"></textarea>
+              <textarea class="practice-steps-textarea" placeholder="Gõ các bước giải của bạn vào đây (khoảng 2-4 dòng, gõ phím bình thường)..." rows="3"></textarea>
               <button class="btn check-answer" type="button" style="align-self: flex-start; padding: 7px 16px; font-size: 13px;">Nộp bài giải</button>
             </div>
             <div class="practice-grade-result hidden"></div>
