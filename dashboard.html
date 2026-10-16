@@ -400,7 +400,7 @@
       background: #fef2f2;
     }
 
-    /* MODAL ĐĂNG NHẬP / ĐĂNG KÝ (Google hoặc Email + Mật khẩu) */
+    /* MODAL ĐĂNG NHẬP / ĐĂNG KÝ */
     .login-modal {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -666,7 +666,8 @@
     <a class="brand" href="index.html"><b>✦</b> MATHFIX <span>AI</span></a>
     
     <div style="display:flex; align-items:center; gap:16px;">
-      <a href="about.html" style="color:#64748b; font-size:13px; font-weight:600; text-decoration:none;">Giới thiệu 2026</a>
+      <!-- Link "Giới thiệu" (Tự động ẩn đi khi học sinh đã đăng nhập) -->
+      <a id="navAboutLink" href="about.html" style="color:#64748b; font-size:13px; font-weight:600; text-decoration:none;">Giới thiệu</a>
       
       <!-- KHU VỰC AUTH: NÚT ĐĂNG NHẬP HOẶC AVATAR TRÒN -->
       <div id="authNavArea">
@@ -820,14 +821,13 @@
     </section>
   </main>
 
-  <!-- MODAL ĐĂNG NHẬP (GOOGLE HOẶC EMAIL + PASSWORD) -->
+  <!-- MODAL ĐĂNG NHẬP -->
   <div id="loginModal" class="login-modal hidden">
     <div class="login-modal-box">
       <button class="btn-close-modal" style="position:absolute; top:16px; right:16px;" onclick="closeLoginModal()">✕</button>
       <div class="login-modal-title">Tài khoản MathFix</div>
       <div class="login-modal-sub">Đăng nhập để tự động lưu lịch sử học tập</div>
 
-      <!-- Đăng nhập 1-chạm Google -->
       <button class="btn-google-action" onclick="loginWithGoogle()" type="button">
         <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.04h3.88c2.27-2.09 3.665-5.17 3.665-9.14z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.04c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.13C3.26 21.43 7.33 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.28c-.25-.72-.38-1.49-.38-2.28s.13-1.56.38-2.28V6.59H1.25C.45 8.24 0 10.07 0 12s.45 3.76 1.25 5.41l4.03-3.13z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.57 1.25 6.59l4.03 3.13c.95-2.83 3.6-4.97 6.72-4.97z"/></svg>
         Tiếp tục với Google
@@ -837,13 +837,11 @@
         <span>hoặc nhập tài khoản</span>
       </div>
 
-      <!-- Tab Đăng nhập / Đăng ký email -->
       <div class="auth-mode-tabs">
         <button id="tabLogin" class="auth-mode-tab active" onclick="setAuthMode('login')">Đăng nhập</button>
         <button id="tabRegister" class="auth-mode-tab" onclick="setAuthMode('register')">Đăng ký mới</button>
       </div>
 
-      <!-- Form nhập Email + Mật khẩu -->
       <form onsubmit="loginWithEmail(event)">
         <div class="auth-input-group">
           <label for="authEmail">Email học sinh</label>
@@ -863,7 +861,7 @@
     <div class="history-modal-box">
       <div class="history-modal-head">
         <h3>📜 Lịch sử học tập của bạn</h3>
-        <button class="btn-close-modal" type="button" onclick="document.getElementById('historyModal').classList.add('hidden')">✕</button>
+        <button id="btnCloseHistoryModal" class="btn-close-modal" type="button" onclick="document.getElementById('historyModal').classList.add('hidden')">✕</button>
       </div>
       <div class="history-tabs">
         <button class="history-tab-btn active" data-type="analysis" type="button">📝 Bài đã phân tích</button>
@@ -876,7 +874,7 @@
   </div>
 
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <script src="auth.js?v=4"></script>
+  <script src="auth.js?v=5"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
   <script>window.LEARNING_DEMO_MODE = new URLSearchParams(location.search).has('demo');</script>
   <script src="domain.js?v=6"></script>
