@@ -142,7 +142,7 @@
 
     .level-tag.easier { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
 
-    /* NÚT "PHÂN TÍCH BÀI" NỔI BẬT TRÊN THANH TIÊU ĐỀ */
+    /* NÚT PHÂN TÍCH BÀI: MẶC ĐỊNH ẨN, CHỈ HIỆN KHI Ở TRANG KẾT QUẢ */
     .btn-nav-analyze {
       display: inline-flex;
       align-items: center;
@@ -239,6 +239,7 @@
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
     }
 
+    /* ĐỊNH DẠNG XUỐNG DÒNG RÕ RÀNG */
     .error-card p,
     .work-compare b,
     .tip,
@@ -527,7 +528,7 @@
     <a class="brand" href="index.html"><b>✦</b> MATHFIX <span>AI</span></a>
     
     <div style="display:flex; align-items:center; gap:12px;">
-      <!-- NÚT PHÂN TÍCH BÀI: MẶC ĐỊNH ẨN, CHỈ HIỆN KHI Ở MÀN HÌNH KẾT QUẢ PHÂN TÍCH -->
+      <!-- NÚT PHÂN TÍCH BÀI: MẶC ĐỊNH ẨN, CHỈ HIỆN KHI Ở TRANG KẾT QUẢ -->
       <button id="navNewAnalyzeBtn" class="btn-nav-analyze hidden" type="button" onclick="goToUploadScreen()">✨ Phân tích bài</button>
       
       <a id="navAboutLink" href="about.html" style="color:#64748b; font-size:13px; font-weight:600; text-decoration:none;">Giới thiệu</a>
@@ -730,59 +731,4 @@
 
       <div class="auth-mode-tabs">
         <button id="tabLogin" class="auth-mode-tab active" onclick="setAuthMode('login')">Đăng nhập</button>
-        <button id="tabRegister" class="auth-mode-tab" onclick="setAuthMode('register')">Đăng ký mới</button>
-      </div>
-
-      <form onsubmit="loginWithEmail(event)">
-        <div class="auth-input-group">
-          <label for="authEmail">Email học sinh</label>
-          <input type="email" id="authEmail" placeholder="vd: hocsinh@gmail.com" required>
-        </div>
-        <div class="auth-input-group">
-          <label for="authPassword">Mật khẩu</label>
-          <input type="password" id="authPassword" placeholder="Nhập ít nhất 6 ký tự" minlength="6" required>
-        </div>
-        <button id="btnSubmitEmailAuth" class="btn-submit-auth" type="submit">Đăng nhập</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- MODAL XEM LỊCH SỬ HỌC TẬP -->
-  <div id="historyModal" class="history-modal hidden">
-    <div class="history-modal-box">
-      <div class="history-modal-head">
-        <h3>📜 Lịch sử học tập của bạn</h3>
-        <button id="btnCloseHistoryModal" class="btn-close-modal" type="button" onclick="document.getElementById('historyModal').classList.add('hidden')">✕</button>
-      </div>
-      <div class="history-tabs">
-        <button class="history-tab-btn active" data-type="analysis" type="button">📝 Bài đã phân tích</button>
-        <button class="history-tab-btn" data-type="practice" type="button">📚 Bài đã luyện tập</button>
-      </div>
-      <div id="historyListContent" class="history-list">
-        <div class="history-loading">Đang tải lịch sử...</div>
-      </div>
-    </div>
-  </div>
-
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <script src="auth.js?v=6"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
-  <script>window.LEARNING_DEMO_MODE = new URLSearchParams(location.search).has('demo');</script>
-  <script src="domain.js?v=15"></script>
-  <script src="mock-analysis-service.js?v=15"></script>
-  <script src="vision-analysis.js?v=15"></script>
-  <script src="learning-path.js?v=15"></script>
-
-  <script>
-    document.querySelectorAll('.history-tab-btn').forEach(btn => {
-      btn.onclick = () => {
-        document.querySelectorAll('.history-tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        if (typeof window.loadHistoryTab === 'function') {
-          window.loadHistoryTab(btn.dataset.type);
-        }
-      };
-    });
-  </script>
-</body>
-</html>
+        <button
