@@ -6,9 +6,8 @@ NHIỆM VỤ 1: ĐỌC NỘI DUNG TRONG ẢNH (BẮT BUỘC TRUNG THỰC TUYỆT
 
 ĐẶC BIỆT LƯU Ý VỀ studentWorkText (CHỐNG TỰ BỊA LỜI GIẢI):
 - studentWorkText CHỈ ĐƯỢC CHÉP LẠI bài làm do học sinh viết thực tế trong ảnh.
-- Nếu ảnh CHỈ CÓ ĐỀ BÀI (in trong sách giáo khoa, đề thi, tài liệu) mà KHÔNG CÓ BÀI LÀM:
-  BẮT BUỘC trả về studentWorkText là chuỗi rỗng: ""
-  TUYỆT ĐỐI KHÔNG ĐƯỢC TỰ Ý GIẢI TOÁN, KHÔNG ĐƯỢC TỰ ĐIỀN LỜI GIẢI CỦA AI VÀO studentWorkText Ở BƯỚC NÀY!
+- Nếu ảnh CHỈ CÓ ĐỀ BÀI mà KHÔNG CÓ BÀI LÀM: BẮT BUỘC trả về studentWorkText là chuỗi rỗng: ""
+- TUYỆT ĐỐI KHÔNG ĐƯỢC TỰ Ý GIẢI TOÁN, KHÔNG ĐƯỢC TỰ ĐIỀN LỜI GIẢI CỦA AI VÀO studentWorkText Ở BƯỚC NÀY!
 
 NHIỆM VỤ 2: KIỂM ĐỊNH PHẠM VI (CHỈ CHẤP NHẬN MÔN TOÁN THCS LỚP 6, 7, 8, 9 - GDPT 2018):
 - ĐƯỢC CHẤP NHẬN (isSupportedScope: true): MÔN TOÁN THCS (Lớp 6, 7, 8, 9) gồm cả ĐẠI SỐ và HÌNH HỌC theo Chương trình GDPT 2018 Việt Nam.
@@ -56,7 +55,7 @@ TRƯỜNG HỢP B - Học sinh KHÔNG CÓ bài làm (studentWorkText để trố
 - Cung cấp Lời giải mẫu chi tiết từng bước chuẩn mực tại modelSolution dạng gạch đầu dòng rõ ràng:
   "Bước 1: ...\\nBước 2: ...\\nBước 3: ...\\nKết luận: ..." (Không viết đoạn văn xuôi).
 
-QUY TẮC HIỂN THỊ TOÁN HỌC: Mọi công thức toán ở kết quả phân tích kẹp giữa cặp dấu $, ví dụ: $x^2$, $\\frac{a}{b}$, $\\sqrt{x}$.
+QUY TẮC HIỂN THỊ TOÁN HỌC: Mọi công thức toán ở kết quả phân tích kẹp giữa cặp dấu $, ví dụ: $x^2$, $\\frac{a}{b}$, $\\sqrt{x}$, $x \\ne 0$.
 QUY TẮC NGÔN NGỮ: Toàn bộ nội dung BẮT BUỘC 100% TIẾNG VIỆT.
 
 Trả về duy nhất JSON đúng cấu trúc:
@@ -88,7 +87,7 @@ Trả về duy nhất JSON đúng cấu trúc:
   ]
 }`;
 
-// Chỉ thị 1.5: Thẩm định phản biện của học sinh (NGẮN GỌN, TRỌNG TÂM)
+// Chỉ thị 1.5: Thẩm định phản biện của học sinh
 const recheckInstructions = `Bạn là chuyên gia thẩm định sư phạm Toán học công tâm.
 Học sinh phản hồi "AI sai rồi" kèm lý do phản biện.
 Nhiệm vụ: Đánh giá ngắn gọn, dứt khoát theo 3 trường hợp:
@@ -118,7 +117,7 @@ QUY TẮC:
 Trả về duy nhất JSON:
 {"exercises":[{"level":"Dễ hơn","question":"","answer":"","solution":""}]}`;
 
-// Chỉ thị 2.5: Chấm bài giải tự luận từng bước (CÔ ĐỌNG, ĐI THẲNG VÀO CÁC BƯỚC)
+// Chỉ thị 2.5: Chấm bài giải tự luận từng bước
 const gradePracticeInstructions = `Bạn là giáo viên chấm thi Toán THCS.
 Học sinh nộp bài giải tự luận 2-4 dòng.
 Nhiệm vụ: Chấm ngắn gọn, chính xác:
@@ -154,12 +153,18 @@ function extractText(body) {
   return parts.join('');
 }
 
+// BỘ TỰ ĐỘNG VÁ LỖI JSON CHUẨN XÁC — TÁCH BIỆT RÕ RÀNG GIỮA LỆNH TOÁN HỌC VÀ KÝ HIỆU XUỐNG DÒNG
 function repairJson(jsonStr) {
   let str = jsonStr.trim();
   let result = '';
   let inString = false;
   let i = 0;
   const stack = [];
+
+  // Danh sách các lệnh toán học LaTeX bắt đầu bằng b, f, n, r, t (để không nhầm với escape code)
+  const isMathCommand = (cmdPrefix) => {
+    return /^(?:ne|neq|notin|nabla|natural|nless|nleq|ngtr|ngeq|nmid|nparallel|frac|dfrac|tfrac|forall|flat|fbox|times|theta|tau|tan|text|top|to|therefore|triangle|tilde|right|rho|rangle|rightarrow|Rightarrow|beta|bar|binom|bullet|bmod|mathbf|mathbb|bot)\b/.test(cmdPrefix);
+  };
 
   while (i < str.length) {
     const char = str[i];
@@ -191,6 +196,7 @@ function repairJson(jsonStr) {
         i++;
       }
     } else {
+      // BÊN TRONG CHUỖI VĂN BẢN
       if (char === '"') {
         const lookahead = str.slice(i + 1, i + 15).trimStart();
         if (lookahead.length === 0 || /^[,}\]:]/.test(lookahead)) {
@@ -210,11 +216,14 @@ function repairJson(jsonStr) {
           result += '\\' + next;
           i += 2;
         } else if (next === 'b' || next === 'f' || next === 'n' || next === 'r' || next === 't') {
-          const afterNext = str[i + 2];
-          if (afterNext && /[a-zA-Z]/.test(afterNext)) {
+          // Kiểm tra xem phía sau dấu \ có phải là lệnh toán học (như \ne, \frac, \times) hay là dấu xuống dòng thật
+          const cmdCandidate = str.slice(i + 1, i + 15);
+          if (isMathCommand(cmdCandidate)) {
+            // Đây là lệnh toán học -> escape hai dấu \\ để giữ nguyên chữ cho LaTeX
             result += '\\\\' + next;
             i += 2;
           } else {
+            // Đây là dấu xuống dòng / escape thật (ví dụ \nBước 1) -> giữ nguyên một dấu \ để JSON.parse biến thành xuống dòng thực tế
             result += '\\' + next;
             i += 2;
           }
@@ -289,7 +298,6 @@ async function requestAI(input) {
   return parseJson(extractText(await response.json()));
 }
 
-// BƯỚC 0: Quét chữ và kiểm định Toán THCS lớp 6, 7, 8, 9
 export async function scanImage(image) {
   if (typeof image !== 'string' || !image.startsWith('data:image/')) throw new Error('Ảnh tải lên không hợp lệ.');
   const requestCode = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -299,7 +307,6 @@ export async function scanImage(image) {
   ] }]);
 }
 
-// BƯỚC 1: Phân tích bài làm (Bao gồm trường hợp không có bài làm -> Hướng dẫn giải mẫu)
 export async function analyzeImage(image, transcribed) {
   const requestCode = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const hasWork = transcribed?.studentWorkText && transcribed.studentWorkText.trim().length > 0;
@@ -314,7 +321,6 @@ export async function analyzeImage(image, transcribed) {
   return requestAI([{ role: 'user', content: userContent }]);
 }
 
-// BƯỚC 1.5: Thẩm định lại bước giải ("AI chỉ sai rồi")
 export async function recheckStep(data) {
   const { problemText, stepError, studentArgument } = data;
   return requestAI([{ role: 'user', content: [
@@ -322,7 +328,6 @@ export async function recheckStep(data) {
   ] }]);
 }
 
-// BƯỚC 2: Sinh 4 bài luyện tập
 export async function generateExercises(data) {
   const { topic, errors } = data;
   return requestAI([{ role: 'user', content: [
@@ -330,7 +335,6 @@ export async function generateExercises(data) {
   ] }]);
 }
 
-// BƯỚC 2.5: Chấm bài giải tự luận từng bước của học sinh
 export async function gradePractice(data) {
   const { question, studentSteps, solution } = data;
   return requestAI([{ role: 'user', content: [
@@ -338,7 +342,6 @@ export async function gradePractice(data) {
   ] }]);
 }
 
-// BƯỚC 3: Nhận xét sau bài luyện tập
 export async function reviewPractice(data) {
   if (!Array.isArray(data.attempts) || !data.attempts.length) throw new Error('Chưa có đáp án để AI nhận xét.');
   return requestAI([{ role: 'user', content: [{ type: 'input_text', text: `${reviewInstructions}\n\nDữ liệu:\n${JSON.stringify(data)}` }] }]);
