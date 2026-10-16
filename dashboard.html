@@ -142,6 +142,29 @@
 
     .level-tag.easier { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
 
+    /* NÚT PHÂN TÍCH BÀI: CHỈ HIỆN Ở MÀN HÌNH KẾT QUẢ */
+    .btn-nav-analyze {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, #2563eb, #3b82f6);
+      color: #ffffff !important;
+      border: none;
+      padding: 7px 15px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+    }
+    .btn-nav-analyze:hover {
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+    }
+
     .theory-actions {
       display: flex;
       flex-direction: column;
@@ -233,8 +256,8 @@
     .recheck-feedback,
     .problem-invalid-banner p,
     .confirm-box-content {
-      white-space: pre-wrap;
-      line-height: 1.6;
+      white-space: pre-line !important;
+      line-height: 1.65 !important;
     }
 
     .problem-invalid-banner {
@@ -260,7 +283,7 @@
       border-radius: 8px;
       font-size: 14px;
       color: #7f1d1d;
-      white-space: pre-wrap;
+      white-space: pre-line;
     }
 
     .model-solution-box {
@@ -487,6 +510,7 @@
     .btn-submit-auth { width: 100%; background: #2563eb; color: #ffffff; border: none; padding: 11px; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 6px; }
     .btn-close-modal { background: none; border: none; font-size: 20px; color: #64748b; cursor: pointer; }
 
+    /* Modal Lịch sử */
     .history-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 16px; }
     .history-modal-box { background: #ffffff; border-radius: 16px; width: 100%; max-width: 600px; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
     .history-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #f1f5f9; }
@@ -513,7 +537,11 @@
     <a class="brand" href="index.html"><b>✦</b> MATHFIX <span>AI</span></a>
     
     <div style="display:flex; align-items:center; gap:12px;">
+      <!-- NÚT PHÂN TÍCH BÀI: MẶC ĐỊNH ẨN, CHỈ HIỆN KHI Ở TRANG KẾT QUẢ PHÂN TÍCH -->
+      <button id="navNewAnalyzeBtn" class="btn-nav-analyze hidden" type="button" onclick="goToUploadScreen()">✨ Phân tích bài</button>
+      
       <a id="navAboutLink" href="about.html" style="color:#64748b; font-size:13px; font-weight:600; text-decoration:none;">Giới thiệu</a>
+      
       <div id="authNavArea">
         <button class="btn-open-login" onclick="openLoginModal()" type="button">
           <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.04h3.88c2.27-2.09 3.665-5.17 3.665-9.14z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.04c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.13C3.26 21.43 7.33 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.28c-.25-.72-.38-1.49-.38-2.28s.13-1.56.38-2.28V6.59H1.25C.45 8.24 0 10.07 0 12s.45 3.76 1.25 5.41l4.03-3.13z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.57 1.25 6.59l4.03 3.13c.95-2.83 3.6-4.97 6.72-4.97z"/></svg>
@@ -544,6 +572,7 @@
         </div>
         
         <div id="uploadMode">
+          <!-- KHUNG KÉO THẢ & CHỌN FILE ĐÃ SỬA DISPLAY AN TOÀN -->
           <div id="emptyDropLabel" class="drop-zone old-drop" style="cursor: pointer;">
             <input id="imageInput" type="file" accept="image/png,image/jpeg" style="display:none;">
             <div id="emptyDrop">
@@ -750,10 +779,10 @@
   <script src="auth.js?v=6"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
   <script>window.LEARNING_DEMO_MODE = new URLSearchParams(location.search).has('demo');</script>
-  <script src="domain.js?v=18"></script>
-  <script src="mock-analysis-service.js?v=18"></script>
-  <script src="vision-analysis.js?v=18"></script>
-  <script src="learning-path.js?v=18"></script>
+  <script src="domain.js?v=19"></script>
+  <script src="mock-analysis-service.js?v=19"></script>
+  <script src="vision-analysis.js?v=19"></script>
+  <script src="learning-path.js?v=19"></script>
 
   <script>
     document.querySelectorAll('.history-tab-btn').forEach(btn => {
