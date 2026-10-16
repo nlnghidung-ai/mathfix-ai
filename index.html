@@ -148,7 +148,8 @@
     <a class="brand" href="index.html"><b>✦</b> MATHFIX <span>AI</span></a>
     
     <div style="display:flex; align-items:center; gap:16px;">
-      <a href="about.html" style="color:#64748b; font-size:13px; font-weight:600; text-decoration:none;">Giới thiệu 2026</a>
+      <!-- Link "Giới thiệu" (Tự động ẩn đi khi đã đăng nhập) -->
+      <a id="homeAboutLink" href="about.html" style="color:#64748b; font-size:13px; font-weight:600; text-decoration:none;">Giới thiệu</a>
       
       <!-- KHU VỰC AUTH: NÚT ĐĂNG NHẬP HOẶC AVATAR TRÒN -->
       <div id="homeAuthArea">
@@ -279,6 +280,6 @@
   </div>
 
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <script src="auth.js?v=4"></script>
+  <script src="auth.js?v=5"></script>
 </body>
 </html>
