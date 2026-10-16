@@ -5,7 +5,6 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 let _supabaseClient = null;
 let currentUser = null;
 
-// Khởi tạo Supabase an toàn (tự động thử lại nếu mạng tải chậm)
 function getSupabaseClient() {
   if (_supabaseClient) return _supabaseClient;
   if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
@@ -21,11 +20,21 @@ function getSupabaseClient() {
   return null;
 }
 
-// HÀM GỌI ĐĂNG NHẬP GOOGLE TOÀN CỤC (Bấm là chạy ngay)
+// BẬT / ĐÓNG MODAL ĐĂNG NHẬP
+window.openLoginModal = function() {
+  const modal = document.getElementById('loginModal');
+  if (modal) modal.classList.remove('hidden');
+};
+window.closeLoginModal = function() {
+  const modal = document.getElementById('loginModal');
+  if (modal) modal.classList.add('hidden');
+};
+
+// 1. ĐĂNG NHẬP GOOGLE
 window.loginWithGoogle = async function() {
   const client = getSupabaseClient();
   if (!client) {
-    alert('Đang kết nối tài khoản, bạn vui lòng bấm lại sau 2 giây nhé!');
+    alert('Đang kết nối tài khoản, bạn bấm lại sau 2 giây nhé!');
     return;
   }
   try {
@@ -36,71 +45,133 @@ window.loginWithGoogle = async function() {
       }
     });
   } catch (err) {
-    alert('Lỗi đăng nhập: ' + err.message);
+    alert('Lỗi đăng nhập Google: ' + err.message);
   }
 };
 
-// HÀM ĐĂNG XUẤT
+// 2. ĐĂNG NHẬP BẰNG EMAIL & MẬT KHẨU
+window.loginWithEmail = async function(e) {
+  if (e) e.preventDefault();
+  const client = getSupabaseClient();
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const btn = document.getElementById('btnSubmitEmailAuth');
+
+  if (!email || !password) {
+    alert('Vui lòng nhập đầy đủ Email và Mật khẩu.');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Đang xử lý…';
+
+  try {
+    const isRegister = window._authMode === 'register';
+    if (isRegister) {
+      // Đăng ký
+      const { data, error } = await client.auth.signUp({ email, password });
+      if (error) throw error;
+      alert('Đăng ký thành công! Đang chuyển vào phòng học...');
+      closeLoginModal();
+      location.reload();
+    } else {
+      // Đăng nhập
+      const { data, error } = await client.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      closeLoginModal();
+      location.reload();
+    }
+  } catch (err) {
+    alert('Lỗi: ' + (err.message || 'Không thể đăng nhập. Vui lòng kiểm tra lại.'));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = window._authMode === 'register' ? 'Đăng ký tài khoản' : 'Đăng nhập';
+  }
+};
+
+// ĐỔI TAB ĐĂNG NHẬP / ĐĂNG KÝ
+window.setAuthMode = function(mode) {
+  window._authMode = mode;
+  const isReg = mode === 'register';
+  document.getElementById('tabLogin').classList.toggle('active', !isReg);
+  document.getElementById('tabRegister').classList.toggle('active', isReg);
+  document.getElementById('btnSubmitEmailAuth').textContent = isReg ? 'Đăng ký tài khoản' : 'Đăng nhập';
+};
+
+// ĐĂNG XUẤT
 window.logoutMathFix = async function() {
   const client = getSupabaseClient();
   if (client) await client.auth.signOut();
   location.reload();
 };
 
-// Cập nhật giao diện thanh menu cho CẢ 2 TRANG (index.html và dashboard.html)
+// BẬT / TẮT MENU ĐỔ XUỐNG KHI BẤM AVATAR
+window.toggleUserMenu = function(e) {
+  if (e) e.stopPropagation();
+  const dropdown = document.getElementById('userDropdownMenu');
+  if (dropdown) dropdown.classList.toggle('hidden');
+};
+
+// Đóng menu khi bấm ra ngoài
+document.addEventListener('click', (e) => {
+  const dropdown = document.getElementById('userDropdownMenu');
+  const trigger = document.getElementById('avatarTriggerBtn');
+  if (dropdown && !dropdown.classList.contains('hidden') && trigger && !trigger.contains(e.target) && !dropdown.contains(e.target)) {
+    dropdown.classList.add('hidden');
+  }
+});
+
+// CẬP NHẬT GIAO DIỆN NAVBAR
 function updateAuthUI(user) {
-  // 1. Cập nhật cho trang Dashboard
-  const authNav = document.getElementById('authNavArea');
-  if (authNav) {
+  const containers = [document.getElementById('authNavArea'), document.getElementById('homeAuthArea')];
+
+  containers.forEach(container => {
+    if (!container) return;
+
     if (user) {
+      // ĐÃ ĐĂNG NHẬP: CHỈ HIỆN AVATAR TRÒN, BẤM VÀO ĐỔ XUỐNG MENU
       const name = user.user_metadata?.full_name || user.email.split('@')[0];
-      const avatar = user.user_metadata?.avatar_url || 'https://www.gravatar.com/avatar/?d=mp';
-      authNav.innerHTML = `
-        <div class="user-profile-nav">
-          <button id="btnOpenHistory" class="btn-history-nav" type="button" onclick="openHistoryModal()">📜 Lịch sử</button>
-          <div class="user-pill">
-            <img src="${avatar}" alt="Avatar" class="user-avatar" referrerpolicy="no-referrer">
-            <span class="user-name">${name}</span>
+      const email = user.email || '';
+      const avatar = user.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`;
+
+      container.innerHTML = `
+        <div class="avatar-dropdown-wrapper">
+          <button id="avatarTriggerBtn" class="avatar-trigger-btn" type="button" onclick="toggleUserMenu(event)" title="Tài khoản: ${name}">
+            <img src="${avatar}" alt="Avatar" class="user-avatar-circle" referrerpolicy="no-referrer">
+          </button>
+          
+          <div id="userDropdownMenu" class="user-dropdown-menu hidden" onclick="event.stopPropagation()">
+            <div class="user-menu-header">
+              <b class="user-menu-name">${name}</b>
+              <small class="user-menu-email">${email}</small>
+            </div>
+            <div class="user-menu-divider"></div>
+            <button class="user-menu-item" type="button" onclick="toggleUserMenu(); openHistoryModal();">
+              <span>📜</span> Lịch sử học tập
+            </button>
+            <a href="about.html" class="user-menu-item">
+              <span>🏆</span> Giới thiệu dự án 2026
+            </a>
+            <div class="user-menu-divider"></div>
+            <button class="user-menu-item text-danger" type="button" onclick="logoutMathFix()">
+              <span>🚪</span> Thoát
+            </button>
           </div>
-          <button id="btnLogout" class="btn-logout-nav" type="button" onclick="logoutMathFix()">Thoát</button>
         </div>
       `;
     } else {
-      authNav.innerHTML = `
-        <button class="btn-google-login" onclick="loginWithGoogle()" type="button">
-          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.04h3.88c2.27-2.09 3.665-5.17 3.665-9.14z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.04c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.13C3.26 21.43 7.33 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.28c-.25-.72-.38-1.49-.38-2.28s.13-1.56.38-2.28V6.59H1.25C.45 8.24 0 10.07 0 12s.45 3.76 1.25 5.41l4.03-3.13z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.57 1.25 6.59l4.03 3.13c.95-2.83 3.6-4.97 6.72-4.97z"/></svg>
+      // CHƯA ĐĂNG NHẬP: HIỆN NÚT MỞ BẢNG ĐĂNG NHẬP
+      container.innerHTML = `
+        <button class="btn-open-login" type="button" onclick="openLoginModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.04h3.88c2.27-2.09 3.665-5.17 3.665-9.14z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.04c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.13C3.26 21.43 7.33 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.28c-.25-.72-.38-1.49-.38-2.28s.13-1.56.38-2.28V6.59H1.25C.45 8.24 0 10.07 0 12s.45 3.76 1.25 5.41l4.03-3.13z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.57 1.25 6.59l4.03 3.13c.95-2.83 3.6-4.97 6.72-4.97z"/></svg>
           Đăng nhập
         </button>
       `;
     }
-  }
-
-  // 2. Cập nhật cho trang Chủ (index.html)
-  const homeAuth = document.getElementById('homeAuthArea');
-  if (homeAuth) {
-    if (user) {
-      const name = user.user_metadata?.full_name || user.email.split('@')[0];
-      const avatar = user.user_metadata?.avatar_url || 'https://www.gravatar.com/avatar/?d=mp';
-      homeAuth.innerHTML = `
-        <a href="dashboard.html" class="user-home-nav" title="Vào không gian học tập">
-          <div class="user-home-pill">
-            <img src="${avatar}" alt="Avatar" class="user-home-avatar" referrerpolicy="no-referrer">
-            <span>${name} ↗</span>
-          </div>
-        </a>
-      `;
-    } else {
-      homeAuth.innerHTML = `
-        <button class="btn-google-nav" onclick="loginWithGoogle()" type="button">
-          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.04h3.88c2.27-2.09 3.665-5.17 3.665-9.14z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.04c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.13C3.26 21.43 7.33 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.28c-.25-.72-.38-1.49-.38-2.28s.13-1.56.38-2.28V6.59H1.25C.45 8.24 0 10.07 0 12s.45 3.76 1.25 5.41l4.03-3.13z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.57 1.25 6.59l4.03 3.13c.95-2.83 3.6-4.97 6.72-4.97z"/></svg>
-          Đăng nhập Google
-        </button>
-      `;
-    }
-  }
+  });
 }
 
-// Khởi chạy Auth với cơ chế đợi thư viện sẵn sàng
+// Khởi chạy Auth
 async function initAuth() {
   let client = getSupabaseClient();
   if (!client) {
@@ -112,17 +183,6 @@ async function initAuth() {
   }
   if (!client) return;
 
-  // Bắt lỗi OAuth nếu có
-  const hash = window.location.hash;
-  const search = window.location.search;
-  if (hash.includes('error=') || search.includes('error=')) {
-    const params = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : search);
-    const errDesc = params.get('error_description') || params.get('error');
-    alert('Không thể đăng nhập: ' + errDesc);
-    return;
-  }
-
-  // Lắng nghe sự kiện đăng nhập / đăng xuất
   client.auth.onAuthStateChange((event, session) => {
     currentUser = session?.user || null;
     updateAuthUI(currentUser);
@@ -131,7 +191,6 @@ async function initAuth() {
     }
   });
 
-  // Kiểm tra session hiện tại
   try {
     const { data: { session } } = await client.auth.getSession();
     currentUser = session?.user || null;
@@ -254,5 +313,4 @@ window.MathFixAuth = {
   savePractice: savePracticeHistory
 };
 
-// Chạy khởi động ngay
 initAuth();
