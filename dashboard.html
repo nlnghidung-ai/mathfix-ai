@@ -527,8 +527,8 @@
     <a class="brand" href="index.html"><b>✦</b> MATHFIX <span>AI</span></a>
     
     <div style="display:flex; align-items:center; gap:12px;">
-      <!-- NÚT PHÂN TÍCH BÀI: BẤM LÀ QUAY VỀ MÀN HÌNH CHỤP/TẢI ẢNH MỚI -->
-      <button id="navNewAnalyzeBtn" class="btn-nav-analyze" type="button" onclick="goToUploadScreen()">✨ Phân tích bài</button>
+      <!-- NÚT PHÂN TÍCH BÀI: MẶC ĐỊNH ẨN, CHỈ HIỆN KHI Ở MÀN HÌNH KẾT QUẢ PHÂN TÍCH -->
+      <button id="navNewAnalyzeBtn" class="btn-nav-analyze hidden" type="button" onclick="goToUploadScreen()">✨ Phân tích bài</button>
       
       <a id="navAboutLink" href="about.html" style="color:#64748b; font-size:13px; font-weight:600; text-decoration:none;">Giới thiệu</a>
       
@@ -768,10 +768,10 @@
   <script src="auth.js?v=6"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
   <script>window.LEARNING_DEMO_MODE = new URLSearchParams(location.search).has('demo');</script>
-  <script src="domain.js?v=14"></script>
-  <script src="mock-analysis-service.js?v=14"></script>
-  <script src="vision-analysis.js?v=14"></script>
-  <script src="learning-path.js?v=14"></script>
+  <script src="domain.js?v=15"></script>
+  <script src="mock-analysis-service.js?v=15"></script>
+  <script src="vision-analysis.js?v=15"></script>
+  <script src="learning-path.js?v=15"></script>
 
   <script>
     document.querySelectorAll('.history-tab-btn').forEach(btn => {
