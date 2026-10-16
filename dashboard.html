@@ -206,29 +206,55 @@
       color: #7f1d1d;
     }
 
-    /* THẺ HƯỚNG DẪN GIẢI MẪU KHI HỌC SINH KHÔNG CÓ BÀI LÀM */
+    /* KHUNG HƯỚNG DẪN GIẢI MẪU CÓ NÚT BẤM ẨN/HIỆN NỘI DUNG */
     .model-solution-box {
       background: #f0fdf4;
       border: 1.5px solid #86efac;
       border-radius: 14px;
-      padding: 18px 20px;
+      padding: 16px 20px;
       margin-bottom: 24px;
       color: #14532d;
     }
-    .model-solution-box h3 {
-      margin: 0 0 10px 0;
-      font-size: 17px;
+    .model-solution-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      cursor: pointer;
+    }
+    .model-solution-header h3 {
+      margin: 0;
+      font-size: 16px;
       font-weight: 700;
       color: #166534;
       display: flex;
       align-items: center;
       gap: 8px;
     }
+    .btn-toggle-solution {
+      background: #ffffff;
+      border: 1px solid #86efac;
+      color: #166534;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .btn-toggle-solution:hover {
+      background: #dcfce7;
+      border-color: #22c55e;
+    }
     .model-solution-content {
       font-size: 15px;
       line-height: 1.7;
       white-space: pre-wrap;
       color: #1e293b;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px dashed #86efac;
     }
 
     /* Ô NHẬP LỜI GIẢI TỰ LUẬN TRONG PHẦN LUYỆN TẬP */
@@ -314,9 +340,7 @@
       resize: vertical;
       outline: none;
     }
-    .recheck-argument-text:focus {
-      border-color: #d97706;
-    }
+    .recheck-argument-text:focus { border-color: #d97706; }
     .recheck-actions {
       display: flex;
       gap: 8px;
@@ -343,36 +367,17 @@
       cursor: pointer;
     }
 
-    /* KẾT QUẢ THẨM ĐỊNH 3 TRƯỜNG HỢP */
     .recheck-feedback {
       padding: 12px 14px;
       border-radius: 8px;
       font-size: 14px;
       line-height: 1.5;
     }
-    .recheck-feedback.ai_wrong {
-      background: #ecfdf5;
-      border: 1px solid #6ee7b7;
-      color: #065f46;
-    }
-    .recheck-feedback.student_wrong {
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-      color: #991b1b;
-    }
-    .recheck-feedback.both_flawed {
-      background: #eff6ff;
-      border: 1px solid #93c5fd;
-      color: #1e40af;
-    }
-    .error-card.acknowledged-correct {
-      border: 2px solid #10b981 !important;
-      background: #f0fdf4 !important;
-    }
-    .error-card.acknowledged-correct .severity {
-      background: #10b981 !important;
-      color: #fff !important;
-    }
+    .recheck-feedback.ai_wrong { background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46; }
+    .recheck-feedback.student_wrong { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+    .recheck-feedback.both_flawed { background: #eff6ff; border: 1px solid #93c5fd; color: #1e40af; }
+    .error-card.acknowledged-correct { border: 2px solid #10b981 !important; background: #f0fdf4 !important; }
+    .error-card.acknowledged-correct .severity { background: #10b981 !important; color: #fff !important; }
 
     .confirm-card {
       background: #ffffff;
@@ -605,10 +610,13 @@
         </div>
       </div>
 
-      <!-- HƯỚNG DẪN GIẢI MẪU NẾU HỌC SINH ĐỂ TRỐNG BÀI LÀM -->
+      <!-- HƯỚNG DẪN GIẢI MẪU (MẶC ĐỊNH ẨN NỘI DUNG, BẤM VÀO MỚI MỞ RA) -->
       <div id="modelSolutionBox" class="model-solution-box hidden">
-        <h3><span>💡</span> Hướng dẫn giải chi tiết cho bài toán</h3>
-        <div id="modelSolutionContent" class="model-solution-content"></div>
+        <div class="model-solution-header" id="modelSolutionHeaderToggle">
+          <h3><span>💡</span> Hướng dẫn giải chi tiết cho bài toán</h3>
+          <button id="toggleSolutionBtn" class="btn-toggle-solution" type="button">👁️ Xem lời giải ▼</button>
+        </div>
+        <div id="modelSolutionContent" class="model-solution-content hidden"></div>
       </div>
 
       <div class="result-layout">
@@ -692,10 +700,10 @@
   <script src="auth.js?v=6"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
   <script>window.LEARNING_DEMO_MODE = new URLSearchParams(location.search).has('demo');</script>
-  <script src="domain.js?v=10"></script>
-  <script src="mock-analysis-service.js?v=10"></script>
-  <script src="vision-analysis.js?v=10"></script>
-  <script src="learning-path.js?v=10"></script>
+  <script src="domain.js?v=11"></script>
+  <script src="mock-analysis-service.js?v=11"></script>
+  <script src="vision-analysis.js?v=11"></script>
+  <script src="learning-path.js?v=11"></script>
 
   <script>
     document.querySelectorAll('.history-tab-btn').forEach(btn => {
