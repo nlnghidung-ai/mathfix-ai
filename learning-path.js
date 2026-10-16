@@ -122,6 +122,7 @@ function setImage(src){
 
 function showInputError(message){$('#uploadError').textContent=message;$('#uploadError').classList.remove('hidden')}
 
+// SỰ KIỆN CHỌN FILE ẢNH
 $('#imageInput').onchange=e=>{
   const f=e.target.files[0];
   if(!f)return;
@@ -156,6 +157,7 @@ $('#reselectBtn').onclick=()=>{
   $('#analyzeBtn').disabled = true;
 };
 
+// SỰ KIỆN CHUYỂN TAB TẢI ẢNH / CAMERA
 $$('.tab').forEach(t=>t.onclick=async()=>{
   const camera=t.dataset.tab==='camera';
   $$('.tab').forEach(x=>x.classList.toggle('active',x===t));
@@ -175,6 +177,7 @@ $$('.tab').forEach(t=>t.onclick=async()=>{
   }
 });
 
+// SỰ KIỆN CHỤP ẢNH TỪ CAMERA
 $('#captureBtn').onclick=()=>{
   const v=$('#cameraPreview'),c=$('#cameraCanvas');
   if(!v.videoWidth)return;
@@ -521,7 +524,6 @@ function renderPath(r){
     <p>${cleanBreakLines(s.goal)}</p>
     ${i===0?`
       <div class="theory-actions">
-        <!-- Nút mở video bài giảng YouTube -->
         <a class="resource-video-btn" target="_blank" rel="noopener" href="${videoUrl}">
           <span class="yt-icon">▶</span>
           <div class="yt-info">
@@ -529,7 +531,6 @@ function renderPath(r){
             <small>Chủ đề: ${topicName}</small>
           </div>
         </a>
-        <!-- Nút Luyện tập luôn không cần xem video -->
         <button class="btn next-step" type="button">Luyện tập luôn (4 bài) →</button>
       </div>
     `:''}
@@ -666,6 +667,7 @@ function demoReview(){
   };
 }
 
+// ĐÃ SỬA CHÍNH XÁC DẤU ĐÓNG NGOẶC CỦA cleanBreakLines TRÊN DÒNG PLANNER.TOMORROW
 function renderReview(summary,feedback,total){
   const wrong=practiceAttempts.filter(x=>!x.isCorrect);
   const errors=wrong.map((attempt,index)=>{
@@ -682,7 +684,7 @@ function renderReview(summary,feedback,total){
   }).join('');
   const fallback={today:wrong.length?`Làm lại ${wrong.length} câu sai, ghi rõ từng phép tính.`:'Làm thêm câu cùng dạng để duy trì kết quả tốt.',tomorrow:`Xem trước kiến thức ${currentAnalysis.knowledgePoint.name}.`,review:'Ôn lại các bước tính đã sai trước khi làm bài mới.'};
   const planner={...fallback,...(feedback.studyPlanner||{})};
-  summary.innerHTML=`<b>Kết quả luyện tập: ${correctCount}/${total} bài đạt điểm tuyệt đối</b><p>${cleanBreakLines(escapeHtml(feedback.summary))}</p>${errors?`<div class="review-mistakes">${errors}</div>`:''}<section class="study-planner"><p class="planner-kicker">STUDY PLANNER</p><h4>Kế hoạch ôn tập của bạn</h4><div><b>📝 BTVN hôm nay</b><span>${cleanBreakLines(escapeHtml(planner.today))}</span></div><div><b>📖 Xem trước ngày mai</b><span>${cleanBreakLines(escapeHtml(planner.tomorrow)}</span></div><div><b>💡 Ôn bài cũ + lỗi còn hổng</b><span>${cleanBreakLines(escapeHtml(planner.review))}</span></div></section>`;
+  summary.innerHTML=`<b>Kết quả luyện tập: ${correctCount}/${total} bài đạt điểm tuyệt đối</b><p>${cleanBreakLines(escapeHtml(feedback.summary))}</p>${errors?`<div class="review-mistakes">${errors}</div>`:''}<section class="study-planner"><p class="planner-kicker">STUDY PLANNER</p><h4>Kế hoạch ôn tập của bạn</h4><div><b>📝 BTVN hôm nay</b><span>${cleanBreakLines(escapeHtml(planner.today))}</span></div><div><b>📖 Xem trước ngày mai</b><span>${cleanBreakLines(escapeHtml(planner.tomorrow))}</span></div><div><b>💡 Ôn bài cũ + lỗi còn hổng</b><span>${cleanBreakLines(escapeHtml(planner.review))}</span></div></section>`;
   renderMath(summary);
 }
 
