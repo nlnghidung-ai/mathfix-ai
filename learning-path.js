@@ -25,21 +25,34 @@ function toPlainText(str) {
       .replace(/\\/g, '');
   });
 
-  s = s.replace(/\\n/g, '\n');
+  // Chuyển ký hiệu khác kể cả khi AI quên bọc dấu $
+  s = s.replace(/\\(?:neq|ne)\b/g, ' ≠ ')
+       .replace(/\\n/g, '\n');
   return s.trim();
 }
 
-// HÀM TÁCH BẠCH TUYỆT ĐỐI GIỮA VĂN BẢN XUỐNG DÒNG VÀ CÔNG THỨC TOÁN HỌC
+// HÀM TÁCH BẠCH VÀ BẢO VỆ KÝ HIỆU TOÁN (XỬ LÝ TRIỆT ĐỂ LỖI x e1 VÀ DẤU $)
 function cleanBreakLines(rawStr) {
   if (!rawStr) return '';
   let str = String(rawStr);
 
+  // 1. GỠ CHỮ TIẾNG VIỆT BỊ AI BỌC NHẦM VÀO TRONG DẤU $...$
+  // Nếu bên trong $...$ có chữ tiếng Việt có dấu (ví dụ: $không xác định tại x=1$), tự động giải phóng chữ ra ngoài
+  str = str.replace(/\$([^\$]*[àáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđ][^\$]*)\$/gi, (_, content) => {
+    // Tách phần chữ tiếng Việt và công thức toán thuần túy (nếu có công thức x=1 thì bọc lại $x=1$)
+    return content.replace(/([a-zA-Z0-9_\^\\{}+\-*/=<>≤≥≠\s]+\s*=\s*[a-zA-Z0-9_\^\\{}+\-*/=<>≤≥≠\s]+)/g, '$$$1$$');
+  });
+
+  // 2. NẾU AI VIẾT \ne HOẶC \neq NGOÀI DẤU $ (ví dụ 'x \ne 1'): TỰ ĐỘNG BẢO VỆ THÀNH ≠ ĐỂ KHÔNG BỊ BIẾN THÀNH e1
+  str = str.replace(/(^|[^\$])\\(?:neq|ne)\b/g, '$1 ≠ ');
+
+  // 3. TÁCH CHUỖI THÀNH 2 PHẦN: CÔNG THỨC VÀ VĂN BẢN
   const parts = str.split(/(\$\$[\s\S]*?\$\$|\$[^\$]*?\$)/g);
 
   for (let i = 0; i < parts.length; i++) {
     const isMath = parts[i].startsWith('$') && parts[i].endsWith('$');
     if (isMath) {
-      // Công thức toán học: Giữ nguyên vẹn 100%
+      // Công thức toán học: Giữ nguyên 100%
     } else {
       // Văn bản thường bên ngoài: Xuống dòng an toàn
       parts[i] = parts[i].replace(/\\n/g, '\n');
@@ -122,7 +135,6 @@ function setImage(src){
 
 function showInputError(message){$('#uploadError').textContent=message;$('#uploadError').classList.remove('hidden')}
 
-// SỰ KIỆN CHỌN FILE ẢNH
 $('#imageInput').onchange=e=>{
   const f=e.target.files[0];
   if(!f)return;
@@ -157,7 +169,6 @@ $('#reselectBtn').onclick=()=>{
   $('#analyzeBtn').disabled = true;
 };
 
-// SỰ KIỆN CHUYỂN TAB TẢI ẢNH / CAMERA
 $$('.tab').forEach(t=>t.onclick=async()=>{
   const camera=t.dataset.tab==='camera';
   $$('.tab').forEach(x=>x.classList.toggle('active',x===t));
@@ -177,7 +188,6 @@ $$('.tab').forEach(t=>t.onclick=async()=>{
   }
 });
 
-// SỰ KIỆN CHỤP ẢNH TỪ CAMERA
 $('#captureBtn').onclick=()=>{
   const v=$('#cameraPreview'),c=$('#cameraCanvas');
   if(!v.videoWidth)return;
@@ -345,7 +355,7 @@ function showResult(result){
   $('#resultPanel').classList.remove('hidden');
   $('#resultImage').src=imageUrl;
 
-  // 1. KIỂM ĐỊNH ĐỀ BÀI
+  // 1. KIỂM ĐỊNH ĐỀ BÀI (ĐÃ ĐƯỢC LÀM SẠCH KÝ HIỆU KHÁC ≠ VÀ CHỮ TIẾNG VIỆT)
   const invalidBanner = $('#problemInvalidBanner');
   if (result.isProblemValid === false) {
     invalidBanner.classList.remove('hidden');
@@ -356,7 +366,7 @@ function showResult(result){
     invalidBanner.classList.add('hidden');
   }
 
-  // 2. HƯỚNG DẪN GIẢI MẪU: ẨN MẶC ĐỊNH
+  // 2. HƯỚNG DẪN GIẢI MẪU
   const modelBox = $('#modelSolutionBox');
   const modelContent = $('#modelSolutionContent');
   const toggleBtn = $('#toggleSolutionBtn');
@@ -445,7 +455,6 @@ function showAnalysis(index){
   renderMath($('#resultPanel'));
 }
 
-// BƯỚC XỬ LÝ SỰ KIỆN PHẢN BIỆN 2 CHIỀU
 function bindRecheckEvents(){
   $$('.btn-recheck-step').forEach(btn => {
     btn.onclick = () => {
@@ -513,7 +522,6 @@ function bindRecheckEvents(){
   });
 }
 
-// BƯỚC VẼ LỘ TRÌNH (TÍCH HỢP XEM BÀI GIẢNG YOUTUBE & LUYỆN TẬP LUÔN)
 function renderPath(r){
   const topicName = r.knowledgePoint?.name || r.topic || 'Toán THCS';
   const videoUrl = r.learningResources?.[0]?.url || `https://www.youtube.com/results?search_query=${encodeURIComponent(topicName + ' toán THCS')}`;
@@ -553,7 +561,6 @@ function renderPath(r){
   renderMath($('#pathSteps'));
 }
 
-// BỘ GIAO DIỆN HIỂN THỊ 4 BÀI TẬP VỚI CÂU 1, CÂU 2, CÂU 3, CÂU 4
 function practiceMarkup(items){
   if (!items || !items.length) {
     return '<div class="ai-created">Chưa có bài luyện tập nào được nạp.</div>';
@@ -587,7 +594,6 @@ function practiceMarkup(items){
   `;
 }
 
-// XỬ LÝ CHẤM TỰ LUẬN TỪNG BƯỚC BẰNG AI KHI HỌC SINH NỘP BÀI
 function bindPracticeEvents(){
   $$('.check-answer').forEach(btn => {
     btn.onclick = async (event) => {
@@ -667,7 +673,6 @@ function demoReview(){
   };
 }
 
-// ĐÃ SỬA CHÍNH XÁC DẤU ĐÓNG NGOẶC CỦA cleanBreakLines TRÊN DÒNG PLANNER.TOMORROW
 function renderReview(summary,feedback,total){
   const wrong=practiceAttempts.filter(x=>!x.isCorrect);
   const errors=wrong.map((attempt,index)=>{
