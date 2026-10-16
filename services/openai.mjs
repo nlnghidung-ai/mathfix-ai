@@ -1,72 +1,129 @@
-// Chỉ thị 0: Đọc nguyên văn nội dung bài toán từ ảnh
-const scanInstructions = `Bạn là trợ lý đọc ảnh bài làm học sinh Việt Nam. Hãy đọc trung thực nguyên văn:
-1. Đề bài bài toán trong ảnh.
-2. Từng bước giải hoặc bài làm của học sinh trong ảnh.
-Không giải bài, không nhận xét đúng sai ở bước này.
-QUY TẮC HIỂN THỊ TOÁN HỌC: Mọi biểu thức toán học (phân số, căn bậc, lũy thừa, số mũ, phương trình) hãy viết dưới dạng LaTeX kẹp giữa cặp dấu $, ví dụ: $x^{12}$, $\\frac{a}{b}$, $\\sqrt{x}$, $\\sqrt[3]{x}$.
-QUY TẮC NGÔN NGỮ: Toàn bộ nội dung trả về (problemText, studentWorkText, message) BẮT BUỘC 100% BẰNG TIẾNG VIỆT.
-Trả về duy nhất JSON đúng cấu trúc:
-{"readable":true,"needsRetake":false,"problemText":"Nguyên văn đề bài đọc được","studentWorkText":"Nguyên văn bài làm của học sinh","message":""}
-Nếu ảnh quá mờ không đọc được: readable:false, needsRetake:true, message:"Ảnh quá mờ hoặc thiếu sáng, hãy chụp lại."`;
+// Chỉ thị 0: Đọc nội dung & KIỂM ĐỊNH PHẠM VI (Đại số 6, 7, 8, 9 GDPT 2018)
+const scanInstructions = `Bạn là trợ lý đọc ảnh bài làm học sinh cho dự án MathFix AI.
+NHIỆM VỤ 1: Đọc trung thực nguyên văn:
+- Đề bài bài toán trong ảnh.
+- Từng bước giải hoặc bài làm của học sinh.
 
-// Chỉ thị 1: Phân tích bài làm và tìm lỗi sai
-const analyzeInstructions = `Bạn là trợ lý sư phạm phân tích ẢNH BÀI LÀM học sinh Việt Nam.
-Quy trình bắt buộc: (1) đọc đề bài, (2) đọc từng phép tính/bước làm của học sinh, (3) tự tính lại, (4) chỉ ra lỗi dựa trên bằng chứng nhìn thấy trong ảnh.
-Ảnh có thể có NHIỀU bài. Phải tách từng bài độc lập; không gộp lỗi của bài này sang bài khác.
-Chỉ tập trung phát hiện lỗi và kiến thức cần ôn, KHÔNG tự tạo bài tập.
+NHIỆM VỤ 2: KIỂM ĐỊNH PHẠM VI CHƯƠNG TRÌNH (Chỉ chấp nhận ĐẠI SỐ THCS LỚP 6, 7, 8, 9 theo Chương trình GDPT 2018 Việt Nam):
+- ĐƯỢC CHẤP NHẬN (isSupportedScope: true):
+  + Lớp 6: Số tự nhiên, luỹ thừa, chia hết, số nguyên, phân số, số thập phân.
+  + Lớp 7: Số hữu tỉ, số thực, tỉ lệ thức, đại lượng tỉ lệ, biểu thức đại số, đa thức một biến.
+  + Lớp 8: Đa thức nhiều biến, hằng đẳng thức đáng nhớ, phân tích nhân tử, phân thức đại số, phương trình bậc nhất một ẩn.
+  + Lớp 9: Căn bậc hai, căn bậc ba; Hệ hai phương trình bậc nhất hai ẩn; Phương trình bậc hai một ẩn; Định lý Vi-et; Bất đẳng thức & bất phương trình bậc nhất một ẩn.
+- TỪ CHỐI (isSupportedScope: false): Nếu thuộc Hình học, Xác suất - Thống kê, Toán suy luận logic/đố mẹo ngoài lề, Toán Tiểu học, Toán Cấp 3 THPT, hoặc các môn học khác. Nêu rõ lý do lịch sự tại trường scopeReason.
 
-QUY TẮC HIỂN THỊ TOÁN HỌC BẮT BUỘC:
-Mọi công thức, biểu thức toán học (lũy thừa, căn thức, phân số, phương trình, số mũ) BẮT BUỘC viết dưới dạng LaTeX chuẩn kẹp giữa cặp dấu $, ví dụ: $x^2$, $n^{12}$, $\\frac{a}{b}$, $\\sqrt{x}$, $\\sqrt[3]{x}$. Tuyệt đối không viết thô x^2 hay a/b.
+QUY TẮC HIỂN THỊ TOÁN HỌC: Mọi biểu thức toán viết dưới dạng LaTeX kẹp giữa cặp dấu $, ví dụ: $x^2$, $\\frac{a}{b}$, $\\sqrt{x}$.
+QUY TẮC NGÔN NGỮ: Toàn bộ nội dung BẮT BUỘC 100% BẰNG TIẾNG VIỆT.
 
-QUY TẮC NGÔN NGỮ BẮT BUỘC:
-TOÀN BỘ các trường văn bản trong JSON (gồm title, topic, position, expectedWork, explanation, note, improvements) BẮT BUỘC 100% PHẢI VIẾT BẰNG TIẾNG VIỆT, tuyệt đối KHÔNG được dùng tiếng Anh.
-- expectedWork: Cách làm đúng / phép tính đúng kèm công thức LaTeX $...$.
-- explanation: Lời giải thích vì sao sai và cách sửa bằng tiếng Việt dễ hiểu kèm công thức $...$.
-- note: Mẹo nhỏ hoặc lưu ý ngắn gọn bằng tiếng Việt giúp học sinh tránh lặp lại lỗi.
-
-Trả về duy nhất JSON đúng cấu trúc:
-{"readable":true,"needsRetake":false,"message":"","analyses":[{"title":"Bài 1","subject":"Toán","topic":"","errors":[{"position":"Bước 1","studentWork":"","expectedWork":"","title":"","explanation":"","note":""}],"improvements":[""]}]}
-Nếu không đọc rõ: readable:false, needsRetake:true, analyses:[] và message nêu rõ bằng tiếng Việt phần nào cần chụp lại.
-Nếu readable:true: mỗi phần tử analyses là đúng một bài có ít nhất một lỗi nhìn thấy.`;
-
-// Chỉ thị 1.5: Thẩm định lại bước giải khi học sinh bấm "AI chỉ sai rồi"
-const recheckInstructions = `Bạn là chuyên gia thẩm định sư phạm Toán học.
-Học sinh phản hồi rằng: "AI chỉ sai rồi" ở một bước giải mà AI trước đó đã báo lỗi.
-Nhiệm vụ của bạn: Hãy bình tĩnh, đặt giả định học sinh có thể làm đúng (ví dụ làm cách khác, biến đổi tắt, hoặc cách hiểu tương đương). Hãy tự giải lại và kiểm tra độc lập từng phép tính:
-- Nếu học sinh LÀM ĐÚNG (AI trước đó bắt lỗi sai oan): Hãy thừa nhận, gửi lời xin lỗi và khen ngợi cách làm hợp lý của học sinh.
-- Nếu học sinh THỰC SỰ LÀM SAI: Hãy giải thích lại thật ân cần, chi tiết từng phép tính để học sinh hiểu rõ vì sao bước đó chưa đúng.
-QUY TẮC: Mọi công thức toán kẹp giữa $, toàn bộ lời giải thích bằng 100% TIẾNG VIỆT.
 Trả về duy nhất JSON đúng cấu trúc:
 {
-  "isStudentCorrect": true hoặc false,
-  "verdictTitle": "Học sinh làm đúng" hoặc "Bước này vẫn có lỗi sai",
-  "explanation": "Lời giải thích chi tiết, thấu đáo và hòa nhã bằng tiếng Việt..."
+  "readable": true,
+  "needsRetake": false,
+  "isSupportedScope": true hoặc false,
+  "scopeReason": "Lý do nếu bài toán nằm ngoài phạm vi Đại số 6, 7, 8, 9...",
+  "problemText": "Nguyên văn đề bài đọc được",
+  "studentWorkText": "Nguyên văn bài làm của học sinh",
+  "message": ""
+}
+Nếu ảnh quá mờ: readable:false, needsRetake:true, message:"Ảnh quá mờ hoặc thiếu sáng, hãy chụp lại."`;
+
+// Chỉ thị 1: Phân tích bài làm (Kiểm tra đề bài + Soi bước giải chuẩn GDPT 2018)
+const analyzeInstructions = `Bạn là chuyên gia sư phạm phân tích bài làm Đại số THCS (Lớp 6, 7, 8, 9) theo Chương trình GDPT 2018 Việt Nam.
+Dữ liệu đầu vào gồm Đề bài và Bài làm của học sinh (đã được học sinh kiểm tra và xác nhận).
+
+QUY TRÌNH PHÂN TÍCH BẮT BUỘC (2 VIỆC):
+VIỆC 1: KIỂM TRA TÍNH ĐÚNG/SAI CỦA ĐỀ BÀI:
+- Tự giải bài toán từ đề bài trước. Kiểm tra xem đề bài có bị sai, mâu thuẫn, thiếu điều kiện hoặc vô nghiệm/vô lý do lỗi ra đề không.
+- Nếu đề bài SAI: Ghi nhận isProblemValid: false, giải thích rõ lỗi của đề tại problemIssue và đưa ra gợi ý sửa đề tại problemCorrectionSuggestion.
+- Nếu đề bài ĐÚNG: isProblemValid: true.
+
+VIỆC 2: PHÂN TÍCH TỪNG BƯỚC GIẢI CỦA HỌC SINH:
+- So sánh từng bước biến đổi theo chuẩn sư phạm THCS GDPT 2018.
+- LÀM TẮT / BỎ BƯỚC: Nếu học sinh tính đúng nhưng làm tắt, nhảy bước quan trọng (ví dụ: chuyển vế không đổi dấu rõ ràng, bỏ qua bước đặt điều kiện xác định, bỏ bước tìm mẫu thức chung...), hãy chỉ rõ học sinh đã thiếu bước biến đổi nào và hướng dẫn bổ sung.
+- TÍNH GIAO HOÁN & ĐỒNG NHẤT TOÁN HỌC: Tuyệt đối KHÔNG máy móc bắt bẻ thứ tự các thừa số hay số hạng. Ví dụ: (x+2)(x+3) và (x+3)(x+2), hay 2x+3 và 3+2x là HOÀN TOÀN ĐÚNG về mặt toán học theo tính chất giao hoán. Không được phán đoán sai vì khác trật tự trình bày.
+
+QUY TẮC HIỂN THỊ TOÁN HỌC: Mọi công thức toán viết dạng LaTeX kẹp giữa cặp dấu $, ví dụ: $x^2$, $\\frac{a}{b}$, $\\sqrt{x}$.
+QUY TẮC NGÔN NGỮ: Toàn bộ nội dung BẮT BUỘC 100% TIẾNG VIỆT.
+
+Trả về duy nhất JSON đúng cấu trúc:
+{
+  "readable": true,
+  "needsRetake": false,
+  "isProblemValid": true hoặc false,
+  "problemIssue": "Nếu đề bài sai, nêu rõ nguyên nhân sai ở đây...",
+  "problemCorrectionSuggestion": "Gợi ý chỉnh sửa đề bài cho chuẩn xác...",
+  "message": "",
+  "analyses": [
+    {
+      "title": "Bài 1",
+      "subject": "Đại số",
+      "topic": "Tên chủ đề bài học",
+      "errors": [
+        {
+          "position": "Bước 2",
+          "studentWork": "Phép tính học sinh làm",
+          "expectedWork": "Cách biến đổi đầy đủ, đúng chuẩn",
+          "title": "Tên lỗi hoặc 'Làm tắt/Bỏ bước biến đổi'",
+          "explanation": "Giải thích chi tiết vì sao sai hoặc vì sao không nên làm tắt",
+          "note": "Lời khuyên ghi nhớ"
+        }
+      ],
+      "improvements": ["Lời khuyên củng cố tổng thể"]
+    }
+  ]
 }`;
 
-// Chỉ thị 2: Sinh ĐÚNG 4 bài luyện tập từ lỗi sai
-const exerciseInstructions = `Bạn là trợ lý sư phạm Toán. Dựa vào chủ đề và các lỗi học sinh vừa mắc phải, hãy TỰ TẠO bộ luyện tập gồm ĐÚNG 4 câu bám sát dạng toán và lỗi này để học sinh củng cố kiến thức:
-- Câu 1 (level: "Dễ hơn"): Dạng bài đơn giản hơn một chút để củng cố lý thuyết và quy tắc tính.
-- Câu 2 và Câu 3 (level: "Tương đương"): Cùng mức độ với bài làm trong ảnh để rèn luyện lại cách giải.
-- Câu 4 (level: "Nâng cao"): Mở rộng thêm một chút để vận dụng.
+// Chỉ thị 1.5: Thẩm định lại bước giải ("AI chỉ sai rồi")
+const recheckInstructions = `Bạn là chuyên gia thẩm định sư phạm Toán học (chuyên sâu Đại số THCS).
+Học sinh phản hồi: "AI chỉ sai rồi".
+Nhiệm vụ: Hãy suy nghĩ độc lập, kiểm tra lại tính giao hoán, các phép biến đổi tương đương hoặc cách giải khác của học sinh:
+- Nếu học sinh LÀM ĐÚNG (kể cả đổi trật tự thừa số hoặc làm cách khác hợp lệ): Hãy thừa nhận, gửi lời xin lỗi và khen ngợi học sinh.
+- Nếu học sinh THỰC SỰ LÀM SAI hoặc BỎ BƯỚC CỐT LÕI: Hãy giải thích cặn kẽ, nhẹ nhàng bằng tiếng Việt.
+QUY TẮC: Mọi công thức toán kẹp $, toàn bộ văn bản 100% TIẾNG VIỆT.
+Trả về duy nhất JSON:
+{
+  "isStudentCorrect": true hoặc false,
+  "verdictTitle": "Học sinh làm đúng" hoặc "Bước này chưa chính xác",
+  "explanation": "Lời giải thích thấu đáo, công tâm..."
+}`;
+
+// Chỉ thị 2: Sinh 4 bài luyện tập (Đại số 6, 7, 8, 9)
+const exerciseInstructions = `Bạn là trợ lý sư phạm Toán. Dựa vào chủ đề Đại số THCS và lỗi học sinh mắc, hãy TỰ TẠO ĐÚNG 4 câu:
+- Câu 1 (level: "Dễ hơn"): Củng cố lý thuyết và quy tắc cơ bản.
+- Câu 2 và Câu 3 (level: "Tương đương"): Cùng mức độ bài học sinh vừa làm.
+- Câu 4 (level: "Nâng cao"): Vận dụng nâng cao.
 QUY TẮC:
-- Mọi công thức toán trong question và solution BẮT BUỘC dùng định dạng LaTeX kẹp giữa cặp dấu $, ví dụ: $\\frac{1}{2}$, $x^3$, $\\sqrt{2x + 1}$.
-- TOÀN BỘ đề bài (question) và lời giải (solution) BẮT BUỘC 100% BẰNG TIẾNG VIỆT.
-- question: chỉ chứa nội dung đề bài, KHÔNG ghi tiền tố "Câu 1:" hay "Bài 1:".
-- answer: đáp án ngắn gọn (chỉ số nguyên, phân số dạng a/b, hoặc biểu thức rút gọn), không giải thích dài dòng ở trường answer.
-- solution: lời giải ngắn gọn 1-2 dòng bằng tiếng Việt có công thức $.
+- Mọi công thức toán trong question và solution kẹp giữa cặp dấu $.
+- question: chỉ chứa đề bài, KHÔNG ghi tiền tố 'Câu 1:' hay 'Bài 1:'.
+- solution: gợi ý các bước giải chuẩn mực 2-4 dòng để đối chiếu.
+- answer: đáp số rút gọn cuối cùng.
 - level: nhận đúng 1 trong 3 giá trị: "Dễ hơn", "Tương đương", "Nâng cao".
-Trả về DUY NHẤT JSON đúng cấu trúc:
+Trả về duy nhất JSON:
 {"exercises":[{"level":"Dễ hơn","question":"","answer":"","solution":""}]}`;
 
+// Chỉ thị 2.5: CHẤM BÀI TỰ LUẬN TỪNG BƯỚC CHO HỌC SINH (Học sinh gõ bàn phím tự nhiên 2-4 dòng)
+const gradePracticeInstructions = `Bạn là giáo viên chấm bài thi Đại số THCS.
+Học sinh nộp các bước giải tự luận (gõ bằng bàn phím thông thường, không dùng mã LaTeX, có thể viết liền hoặc xuống dòng).
+Nhiệm vụ: Đọc và chấm toàn bộ các bước biến đổi của học sinh:
+1. Đánh giá từng bước biến đổi có đúng quy tắc toán học không (tôn trọng tính giao hoán a*b=b*a, a+b=b+a).
+2. Kiểm tra xem học sinh có làm tắt/nhảy cóc bước cốt lõi không.
+3. Kiểm tra đáp số cuối cùng.
+QUY TẮC: Toàn bộ nhận xét bằng 100% TIẾNG VIỆT, công thức toán trong nhận xét kẹp giữa $.
+Trả về duy nhất JSON:
+{
+  "isCorrect": true hoặc false,
+  "score": "Điểm từ 0 đến 10",
+  "verdict": "Làm đúng và đủ bước" hoặc "Đáp số đúng nhưng làm tắt" hoặc "Chưa chính xác ở bước biến đổi",
+  "feedback": "Nhận xét chi tiết từng bước học sinh đã làm, khen ngợi bước làm tốt hoặc chỉ ra chỗ thiếu sót..."
+}`;
+
 // Chỉ thị 3: Nhận xét sau bài luyện tập
-const reviewInstructions = `Bạn là trợ lý sư phạm. Dựa HOÀN TOÀN vào dữ liệu bài luyện đã nộp, chỉ xét attempts có isCorrect:false, đúng thứ tự; không bịa thêm lỗi.
-QUY TẮC: Mọi công thức toán dùng $...$, toàn bộ nhận xét, các bước giải mẫu và kế hoạch học tập (studyPlanner) BẮT BUỘC 100% BẰNG TIẾNG VIỆT.
-Với MỖI câu sai, tạo 2 đến 4 bước giải đúng, rõ như bài làm ngắn. Mỗi bước một câu, tối đa 18 từ.
-summary tối đa 2 câu bằng tiếng Việt. Tạo studyPlanner bám sát lỗi sai: today, tomorrow, review; mỗi mục tối đa 22 từ bằng tiếng Việt.
-Trả duy nhất JSON: {"summary":"","mistakes":[{"steps":["Bước 1: ...","Bước 2: ..."]}],"studyPlanner":{"today":"","tomorrow":"","review":""}}. Số mistakes phải bằng số attempts sai.`;
+const reviewInstructions = `Bạn là trợ lý sư phạm. Dựa trên toàn bộ kết quả nộp bài luyện tập, tổng hợp nhận xét 100% BẰNG TIẾNG VIỆT.
+summary tối đa 2 câu. Tạo studyPlanner: today, tomorrow, review; mỗi mục tối đa 22 từ.
+Trả duy nhất JSON: {"summary":"","mistakes":[{"steps":["Bước 1: ...","Bước 2: ..."]}],"studyPlanner":{"today":"","tomorrow":"","review":""}}.`;
 
 function extractText(body) {
-  if (body.status === 'incomplete') throw new Error('AI chưa hoàn tất phản hồi. Hãy thử lại với ảnh chỉ chứa một bài.');
+  if (body.status === 'incomplete') throw new Error('AI chưa hoàn tất phản hồi. Hãy thử lại với bài ngắn hơn.');
   if (body.error) throw new Error('Dịch vụ AI không hoàn tất yêu cầu. Hãy thử lại.');
   if (typeof body.output_text === 'string' && body.output_text.trim()) return body.output_text;
   const parts = [];
@@ -80,7 +137,6 @@ function extractText(body) {
   return parts.join('');
 }
 
-// BỘ TỰ ĐỘNG SỬA VÀ VÁ TẤT CẢ LỖI JSON
 function repairJson(jsonStr) {
   let str = jsonStr.trim();
   str = str.replace(/\}\s*\{/g, '},{');
@@ -202,7 +258,7 @@ async function requestAI(input) {
   return parseJson(extractText(await response.json()));
 }
 
-// BƯỚC 0: Quét nhanh nội dung bài toán
+// BƯỚC 0: Quét chữ và kiểm định Đại số THCS lớp 6, 7, 8, 9
 export async function scanImage(image) {
   if (typeof image !== 'string' || !image.startsWith('data:image/')) throw new Error('Ảnh tải lên không hợp lệ.');
   const requestCode = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -212,30 +268,40 @@ export async function scanImage(image) {
   ] }]);
 }
 
-// BƯỚC 1: Phân tích bài làm và tìm lỗi sai
+// BƯỚC 1: Phân tích bài làm (Dùng nội dung học sinh đã chỉnh sửa)
 export async function analyzeImage(image, transcribed) {
-  if (typeof image !== 'string' || !image.startsWith('data:image/')) throw new Error('Ảnh tải lên không hợp lệ.');
   const requestCode = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  const contextNote = transcribed ? `\nNội dung học sinh đã kiểm tra và xác nhận:\n- Đề bài: ${transcribed.problemText}\n- Bài làm: ${transcribed.studentWorkText}\n` : '';
-  return requestAI([{ role: 'user', content: [
-    { type: 'input_text', text: `${analyzeInstructions}${contextNote}\nMã phiên: ${requestCode}.` },
-    { type: 'input_image', image_url: image, detail: 'high' }
-  ] }]);
+  const contextNote = transcribed ? `\nNỘI DUNG ĐÃ ĐỐI CHIẾU VÀ ĐƯỢC HỌC SINH TỰ CHỈNH SỬA:\n- Đề bài: ${transcribed.problemText}\n- Bài làm: ${transcribed.studentWorkText}\n(Hãy ưu tiên bám sát văn bản đã chỉnh sửa này để giải toán)\n` : '';
+  
+  const userContent = [{ type: 'input_text', text: `${analyzeInstructions}${contextNote}\nMã phiên: ${requestCode}.` }];
+  if (typeof image === 'string' && image.startsWith('data:image/')) {
+    userContent.push({ type: 'input_image', image_url: image, detail: 'high' });
+  }
+
+  return requestAI([{ role: 'user', content: userContent }]);
 }
 
-// BƯỚC 1.5: Thẩm định lại bước giải khi người dùng bấm "AI chỉ sai rồi"
+// BƯỚC 1.5: Thẩm định lại bước giải ("AI chỉ sai rồi")
 export async function recheckStep(data) {
   const { problemText, stepError } = data;
   return requestAI([{ role: 'user', content: [
-    { type: 'input_text', text: `${recheckInstructions}\n\nDỮ LIỆU ĐỐI CHIẾU:\n- Đề bài: ${problemText || 'Đại số'}\n- Bước học sinh làm: ${stepError.studentWork}\n- Lỗi AI từng phán đoán: ${stepError.title}\n- Giải thích cũ của AI: ${stepError.explanation}\n\nHãy suy nghĩ lại cẩn thận và đưa ra kết luận công tâm nhất.` }
+    { type: 'input_text', text: `${recheckInstructions}\n\nDỮ LIỆU ĐỐI CHIẾU:\n- Đề bài: ${problemText || 'Đại số'}\n- Bước học sinh làm: ${stepError.studentWork}\n- Lỗi AI từng phán đoán: ${stepError.title}\n- Giải thích cũ của AI: ${stepError.explanation}\n\nHãy suy nghĩ lại cẩn thận, xem xét tính giao hoán và đưa ra kết luận công tâm nhất.` }
   ] }]);
 }
 
-// BƯỚC 2: Sinh 4 bài luyện tập từ lỗi sai
+// BƯỚC 2: Sinh 4 bài luyện tập
 export async function generateExercises(data) {
   const { topic, errors } = data;
   return requestAI([{ role: 'user', content: [
-    { type: 'input_text', text: `${exerciseInstructions}\n\nChủ đề: ${topic || 'Đại số'}\nCác lỗi học sinh mắc: ${JSON.stringify(errors || [])}` }
+    { type: 'input_text', text: `${exerciseInstructions}\n\nChủ đề: ${topic || 'Đại số THCS'}\nCác lỗi học sinh mắc: ${JSON.stringify(errors || [])}` }
+  ] }]);
+}
+
+// BƯỚC 2.5: Chấm bài giải tự luận từng bước của học sinh
+export async function gradePractice(data) {
+  const { question, studentSteps, solution } = data;
+  return requestAI([{ role: 'user', content: [
+    { type: 'input_text', text: `${gradePracticeInstructions}\n\nDỮ LIỆU CHẤM BÀI:\n- Đề bài: ${question}\n- Lời giải mẫu chuẩn: ${solution}\n- Bài làm tự luận học sinh gõ vào:\n${studentSteps}\n\nHãy phân tích và nhận xét từng bước biến đổi.` }
   ] }]);
 }
 
