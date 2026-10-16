@@ -34,68 +34,85 @@ function toPlainText(str) {
   return s.trim();
 }
 
-// BỘ CHUẨN HÓA VĂN BẢN VÀ CÔNG THỨC TOÁN HỌC (ĐỒNG BỘ 100% TOÀN BỘ KẾT QUẢ)
-function cleanBreakLines(rawStr) {
+// BỘ CHUYỂN ĐỔI TOÁN HỌC TRỰC TIẾP SANG KATEX HTML (MỘT CHIỀU DUY NHẤT, KHÔNG LỖI ĐÈ $$)
+function formatMathHTML(rawStr) {
   if (!rawStr) return '';
   let str = String(rawStr);
 
-  // 1. TỰ ĐỘNG CHUYỂN ĐỔI \ne VÀ \neq THÀNH KÝ HIỆU ≠ (CHỐNG LỖI x e1 TUYỆT ĐỐI)
+  // 1. Chuyển \n thô thành ký tự xuống dòng thực tế
+  str = str.replace(/\\n/g, '\n');
+
+  // 2. Chuyển \ne hoặc \neq đứng ngoài thành ký hiệu ≠
   str = str.replace(/(^|[^\$\\])\\(?:ne|neq)\b/g, '$1 ≠ ');
 
-  // 2. TỰ ĐỘNG GỠ CHỮ TIẾNG VIỆT KHỎI DẤU $...$ (CHỐNG LỖI MẤT KHOẢNG CÁCH CHỮ)
-  // Nếu bên trong $...$ có từ tiếng Việt (ví dụ: $3 - x thành x - 3$ hoặc $không xác định$), tự động giải phóng chữ ra ngoài
-  str = str.replace(/\$([^\$]+)\$/g, (fullMatch, content) => {
-    const hasVietnamese = /[àáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđ]/i.test(content);
-    const hasWord = /\b(?:không|xác|định|tại|mẫu|thành|bằng|nên|thay|vào|được|thức|rút|gọn|bước|kết|luận|khi|đổi|dấu|phải|thêm|âm|dương)\b/i.test(content);
-    if (hasVietnamese || hasWord) {
-      // Bỏ cặp dấu $ bao ngoài cả câu, chỉ giữ dấu $ cho các công thức con bên trong
-      let unwrap = content;
-      unwrap = unwrap.replace(/(\\(?:dfrac|frac|sqrt|times)\{[^{}]+\}(?:\{[^{}]+\})?)/g, '$$$1$$');
-      return unwrap;
-    }
-    return fullMatch;
-  });
-
-  // 3. TỰ ĐỘNG BỌC DẤU $ CHO CÁC LỆNH LATEX ĐỨNG TRƠ TRỌI (\dfrac, \frac, \sqrt, \text)
-  // Giúp KaTeX nhận diện và vẽ thành công thức thay vì in mã thô ra màn hình
-  str = str.replace(/(^|[^\$])(\\(?:dfrac|frac)\{[^{}]+\}\{[^{}]+\})/g, '$1$$$2$$');
-  str = str.replace(/(^|[^\$])(\\sqrt(?:\[\d+\])?\{[^{}]+\})/g, '$1$$$2$$');
-
-  // 4. XỬ LÝ XUỐNG DÒNG AN TOÀN CHO CÁC PHẦN VĂN BẢN BÊN NGOÀI
-  const parts = str.split(/(\$\$[\s\S]*?\$\$|\$[^\$]*?\$)/g);
-  for (let i = 0; i < parts.length; i++) {
-    const isMath = parts[i].startsWith('$') && parts[i].endsWith('$');
-    if (!isMath) {
-      parts[i] = parts[i].replace(/\\n/g, '\n');
-    }
+  // 3. Nếu KaTeX chưa tải xong, trả về văn bản sạch
+  if (typeof window.katex === 'undefined') {
+    return str;
   }
 
-  return parts.join('').trim();
+  // 4. Render các khối $$...$$ (công thức khối)
+  str = str.replace(/\$\$([\s\S]+?)\$\$/g, (_, tex) => {
+    try {
+      return window.katex.renderToString(tex.trim(), { displayMode: true, throwOnError: false });
+    } catch {
+      return tex;
+    }
+  });
+
+  // 5. Render các khối $...$ (công thức nội dòng)
+  str = str.replace(/\$([^\$\n]+?)\$/g, (fullMatch, tex) => {
+    const trimmed = tex.trim();
+    // Nếu bị AI bọc nhầm cả câu tiếng Việt (chứa chữ có dấu), nhả chữ tiếng Việt ra để không bị dính chữ
+    if (/[àáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđ]/i.test(trimmed)) {
+      return trimmed;
+    }
+    try {
+      return window.katex.renderToString(trimmed, { displayMode: false, throwOnError: false });
+    } catch {
+      return fullMatch;
+    }
+  });
+
+  // 6. Xử lý các lệnh \dfrac, \frac, \sqrt mà AI quên gõ dấu $ bao quanh (dịch thẳng sang KaTeX HTML)
+  str = str.replace(/(\\(?:dfrac|frac)\{[^{}]+\}\{[^{}]+\})/g, (_, tex) => {
+    try {
+      return window.katex.renderToString(tex.trim(), { displayMode: false, throwOnError: false });
+    } catch {
+      return tex;
+    }
+  });
+
+  str = str.replace(/(\\sqrt(?:\[\d+\])?\{[^{}]+\})/g, (_, tex) => {
+    try {
+      return window.katex.renderToString(tex.trim(), { displayMode: false, throwOnError: false });
+    } catch {
+      return tex;
+    }
+  });
+
+  // 7. Xử lý số mũ đơn giản đứng ngoài như BC^2, AB^2, 10^2, 6^2
+  str = str.replace(/\b([a-zA-Z0-9]+)\^([0-9]+)\b/g, '$1<sup>$2</sup>');
+
+  return str;
 }
 
-// BỘ VẼ CÔNG THỨC TOÁN HỌC CHUẨN XÁC
+// BỘ VẼ DỰ PHÒNG CHO NỘI DUNG ĐỘNG
 function renderMath(target){
   const el = target || document.body;
-  const run = () => {
-    if (typeof window.renderMathInElement === 'function') {
-      try {
-        window.renderMathInElement(el, {
-          delimiters: [
-            { left: '$$', right: '$$', display: true },
-            { left: '$', right: '$', display: false }
-          ],
-          ignoredTags: ['script', 'style', 'textarea', 'input', 'pre', 'code'],
-          throwOnError: false
-        });
-      } catch (e) {
-        console.warn('renderMath error:', e);
-      }
+  if (typeof window.renderMathInElement === 'function') {
+    try {
+      window.renderMathInElement(el, {
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '$', right: '$', display: false }
+        ],
+        ignoredTags: ['script', 'style', 'textarea', 'input', 'pre', 'code'],
+        throwOnError: false
+      });
+    } catch (e) {
+      console.warn('renderMath error:', e);
     }
-  };
-
-  run();
-  setTimeout(run, 150);
-  setTimeout(run, 400);
+  }
 }
 
 // HÀM QUẢN LÝ ẨN / HIỆN NÚT "PHÂN TÍCH BÀI" TRÊN THANH TIÊU ĐỀ
@@ -112,7 +129,7 @@ window.goToUploadScreen = function() {
   $('#confirmPanel')?.classList.add('hidden');
   $('#loadingPanel')?.classList.add('hidden');
   $('.old-layout')?.classList.remove('hidden');
-  updateNavAnalyzeBtn(false); // Ẩn nút khi đã về màn hình chọn ảnh
+  updateNavAnalyzeBtn(false);
 
   if (cropper) { cropper.destroy(); cropper = null; }
   imageUrl = '';
@@ -226,7 +243,7 @@ $('#analyzeBtn').onclick=async()=>{
   $('#loadingPanel').classList.remove('hidden');
   $('#loadingText').textContent = 'Đang đọc nội dung trong ảnh…';
   $('#loadingSubtext').textContent = 'AI đang nhận diện chữ viết và kiểm tra phạm vi môn Toán THCS.';
-  updateNavAnalyzeBtn(false); // Không hiện nút ở màn hình loading/confirm
+  updateNavAnalyzeBtn(false);
 
   try {
     const scanRes = await HomeworkAnalysisService.scan(imageUrl);
@@ -349,14 +366,13 @@ async function loadPracticeInBackground(result){
         level: ex.level || defaultLevels[idx] || 'Tương đương',
         question: ex.question || 'Bài tập rèn luyện',
         answer: String(ex.answer || ''),
-        solution: cleanBreakLines(ex.solution || '')
+        solution: ex.solution || ''
       }));
 
       const container = $('#practiceBox');
       if (container && item.generatedExercises.length) {
         container.innerHTML = practiceMarkup(item.generatedExercises);
         bindPracticeEvents();
-        renderMath(container);
       }
     } catch (err) {
       console.warn('Lỗi nạp bài luyện tập:', err);
@@ -370,21 +386,20 @@ function showResult(result){
   $('#resultPanel').classList.remove('hidden');
   $('#resultImage').src=imageUrl;
 
-  // CHỈ HIỂN THỊ NÚT "PHÂN TÍCH BÀI" KHI ĐÃ VÀO TRANG KẾT QUẢ
+  // HIỂN THỊ NÚT "PHÂN TÍCH BÀI" KHI ĐÃ VÀO TRANG KẾT QUẢ
   updateNavAnalyzeBtn(true);
 
-  // 1. KIỂM ĐỊNH ĐỀ BÀI
+  // 1. KIỂM ĐỊNH ĐỀ BÀI (DÙNG FORMATMATHHTML TRỰC TIẾP)
   const invalidBanner = $('#problemInvalidBanner');
   if (result.isProblemValid === false) {
     invalidBanner.classList.remove('hidden');
-    $('#problemInvalidReason').textContent = cleanBreakLines(result.problemIssue || 'Đề bài toán có dấu hiệu mâu thuẫn hoặc chưa chuẩn xác.');
-    $('#problemCorrectionText').textContent = cleanBreakLines(result.problemCorrectionSuggestion || 'Vui lòng kiểm tra lại số liệu của đề bài.');
-    renderMath(invalidBanner);
+    $('#problemInvalidReason').innerHTML = formatMathHTML(result.problemIssue || 'Đề bài toán có dấu hiệu mâu thuẫn hoặc chưa chuẩn xác.');
+    $('#problemCorrectionText').innerHTML = formatMathHTML(result.problemCorrectionSuggestion || 'Vui lòng kiểm tra lại số liệu của đề bài.');
   } else {
     invalidBanner.classList.add('hidden');
   }
 
-  // 2. HƯỚNG DẪN GIẢI MẪU: ẨN MẶC ĐỊNH
+  // 2. HƯỚNG DẪN GIẢI MẪU
   const modelBox = $('#modelSolutionBox');
   const modelContent = $('#modelSolutionContent');
   const toggleBtn = $('#toggleSolutionBtn');
@@ -393,7 +408,7 @@ function showResult(result){
 
   if (firstAnalysis.modelSolution) {
     modelBox.classList.remove('hidden');
-    modelContent.textContent = cleanBreakLines(firstAnalysis.modelSolution);
+    modelContent.innerHTML = formatMathHTML(firstAnalysis.modelSolution);
     modelContent.classList.add('hidden');
     toggleBtn.textContent = '👁️ Xem lời giải ▼';
 
@@ -402,7 +417,6 @@ function showResult(result){
       if (isHidden) {
         modelContent.classList.remove('hidden');
         toggleBtn.textContent = 'Ẩn lời giải ▲';
-        renderMath(modelContent);
       } else {
         modelContent.classList.add('hidden');
         toggleBtn.textContent = '👁️ Xem lời giải ▼';
@@ -423,24 +437,25 @@ function showAnalysis(index){
   correctCount=0;
   practiceAttempts=[];
   const r=currentAnalysis;
-  $('#topicLabel').textContent=`${r.subject.name} · ${r.knowledgePoint.name}`;
-  $('#recommendation').textContent=cleanBreakLines(r.aiRecommendation.message);
+  $('#topicLabel').innerHTML = formatMathHTML(`${r.subject.name} · ${r.knowledgePoint.name}`);
+  $('#recommendation').innerHTML = formatMathHTML(r.aiRecommendation.message);
+  
   const sets=currentResult.analysisSets;
   $('#problemNavigator').innerHTML=sets.length>1?`<div class="problem-nav"><span class="problem-nav-label">Ảnh có ${sets.length} bài cần xem lại. Chọn một bài:</span>${sets.map((item,itemIndex)=>`<button class="problem-tab ${itemIndex===index?'active':''}" data-analysis="${itemIndex}">${item.title||`Bài ${itemIndex+1}`}</button>`).join('')}</div>`:'';
   $$('.problem-tab').forEach(button=>button.onclick=()=>showAnalysis(Number(button.dataset.analysis)));
   
-  // HIỂN THỊ CÁC THẺ LỖI SAI (ĐỒNG BỘ NGUYÊN TẮC VẼ TOÁN VÀ NGẮT DÒNG)
+  // HIỂN THỊ CÁC THẺ LỖI SAI (ÁP DỤNG FORMATMATHHTML CHO TOÀN BỘ CÁC VỊ TRÍ)
   if (r.learningErrors && r.learningErrors.length > 0) {
     $('#errorList').innerHTML=r.learningErrors.map((e, errIdx)=>`
       <article class="error-card" id="error-card-${errIdx}">
         <span class="severity">Cần ôn lại</span>
-        <h3>${e.title}</h3>
+        <h3>${formatMathHTML(e.title)}</h3>
         <div class="work-compare">
-          <div><small>BẠN ĐÃ LÀM</small><b>${cleanBreakLines(e.studentWork)}</b></div>
-          <div><small>CÁCH BIẾN ĐỔI CHUẨN</small><b>${cleanBreakLines(e.correction)}</b></div>
+          <div><small>BẠN ĐÃ LÀM</small><b>${formatMathHTML(e.studentWork)}</b></div>
+          <div><small>CÁCH BIẾN ĐỔI CHUẨN</small><b>${formatMathHTML(e.correction)}</b></div>
         </div>
-        <p><b>Vị trí:</b> ${e.position}. ${cleanBreakLines(e.explanation)}</p>
-        <div class="tip">💡 ${cleanBreakLines(e.tip)}</div>
+        <p><b>Vị trí:</b> ${e.position}. ${formatMathHTML(e.explanation)}</p>
+        <div class="tip">💡 ${formatMathHTML(e.tip)}</div>
         
         <div class="recheck-box" id="recheck-box-${errIdx}">
           <button class="btn-recheck-step" data-index="${errIdx}" type="button">🤔 Phản biện (AI chỉ sai rồi)</button>
@@ -470,7 +485,6 @@ function showAnalysis(index){
   }
   
   renderPath(r);
-  renderMath($('#resultPanel'));
 }
 
 function bindRecheckEvents(){
@@ -521,16 +535,14 @@ function bindRecheckEvents(){
           card.classList.add('acknowledged-correct');
           card.querySelector('.severity').textContent = '✓ Bạn làm đúng';
           feedback.className = 'recheck-feedback ai_wrong';
-          feedback.innerHTML = `<strong>🎉 ${res.verdictTitle}:</strong> ${cleanBreakLines(res.explanation)}`;
+          feedback.innerHTML = `<strong>🎉 ${res.verdictTitle}:</strong> ${formatMathHTML(res.explanation)}`;
         } else if (res.verdictType === 'both_flawed') {
           feedback.className = 'recheck-feedback both_flawed';
-          feedback.innerHTML = `<strong>💡 ${res.verdictTitle}:</strong> ${cleanBreakLines(res.explanation)}`;
+          feedback.innerHTML = `<strong>💡 ${res.verdictTitle}:</strong> ${formatMathHTML(res.explanation)}`;
         } else {
           feedback.className = 'recheck-feedback student_wrong';
-          feedback.innerHTML = `<strong>⚠️ ${res.verdictTitle}:</strong> ${cleanBreakLines(res.explanation)}`;
+          feedback.innerHTML = `<strong>⚠️ ${res.verdictTitle}:</strong> ${formatMathHTML(res.explanation)}`;
         }
-
-        renderMath(feedback);
       } catch (err) {
         btn.disabled = false;
         btn.textContent = 'Gửi phản biện cho AI';
@@ -547,7 +559,7 @@ function renderPath(r){
   $('#pathSteps').innerHTML=r.learningPath.map((s,i)=>`<article class="path-step ${i?'':'active'}" data-step="${s.step}">
     <p class="step-tag">BƯỚC ${s.step}</p>
     <h3>${s.title}</h3>
-    <p>${cleanBreakLines(s.goal)}</p>
+    <p>${formatMathHTML(s.goal)}</p>
     ${i===0?`
       <div class="theory-actions">
         <a class="resource-video-btn" target="_blank" rel="noopener" href="${videoUrl}">
@@ -568,15 +580,12 @@ function renderPath(r){
   if (nextBtn) {
     nextBtn.onclick = () => {
       goStep(2);
-      const pBox = $('#practiceBox');
-      if (pBox) renderMath(pBox);
     };
   }
 
   bindPracticeEvents();
   const restartBtn = $('.restart');
   if (restartBtn) restartBtn.onclick = () => location.reload();
-  renderMath($('#pathSteps'));
 }
 
 function practiceMarkup(items){
@@ -595,144 +604,4 @@ function practiceMarkup(items){
         return `
           <div class="practice-question" data-level="${lvl}" data-question="${encodeURIComponent(x.question)}" data-solution="${encodeURIComponent(x.solution || '')}" data-index="${idx}">
             <label>
-              <span class="level-tag ${cls}">${lvl}</span>
-              <strong class="question-number">Câu ${num}:</strong>
-              <span class="question-text">${cleanBreakLines(x.question.replace(/^\s*Câu\s*\d+\s*[:.)-]?\s*/i, ''))}</span>
-            </label>
-            <div class="practice-solution-box">
-              <textarea class="practice-steps-textarea" placeholder="Gõ các bước giải của bạn vào đây (khoảng 2-4 dòng, gõ phím bình thường)..." rows="3"></textarea>
-              <button class="btn check-answer" type="button" style="align-self: flex-start; padding: 7px 16px; font-size: 13px;">Nộp bài giải</button>
-            </div>
-            <div class="practice-grade-result hidden"></div>
-          </div>
-        `;
-      }).join('')}
-    </div>
-    <button id="finishPractice" class="btn" disabled>Hoàn thành bài luyện →</button>
-  `;
-}
-
-function bindPracticeEvents(){
-  $$('.check-answer').forEach(btn => {
-    btn.onclick = async (event) => {
-      const box = event.currentTarget.closest('.practice-question');
-      const textarea = box.querySelector('.practice-steps-textarea');
-      const resultBox = box.querySelector('.practice-grade-result');
-      const stepsText = textarea.value.trim();
-
-      if (!stepsText) {
-        alert('Vui lòng nhập các bước giải của bạn trước khi nộp bài.');
-        return;
-      }
-
-      btn.disabled = true;
-      btn.textContent = '⏳ AI đang chấm từng bước…';
-      textarea.disabled = true;
-
-      const questionText = decodeURIComponent(box.dataset.question);
-      const solutionText = decodeURIComponent(box.dataset.solution);
-
-      try {
-        const gradeRes = await HomeworkAnalysisService.gradePractice({
-          question: questionText,
-          studentSteps: stepsText,
-          solution: solutionText
-        });
-
-        box.dataset.done = 'yes';
-        resultBox.classList.remove('hidden');
-
-        const isOk = gradeRes.isCorrect === true;
-        resultBox.className = `practice-grade-result ${isOk ? 'correct' : (gradeRes.score >= 5 ? 'partial' : 'wrong')}`;
-        resultBox.innerHTML = `
-          <div><strong>Điểm: ${gradeRes.score || (isOk ? '10/10' : '0/10')} · ${gradeRes.verdict || ''}</strong></div>
-          <div style="margin-top:4px;">${cleanBreakLines(gradeRes.feedback || '')}</div>
-        `;
-        renderMath(resultBox);
-
-        btn.textContent = isOk ? '✓ Đã hoàn thành' : 'Đã chấm bài';
-
-        practiceAttempts.push({
-          question: questionText,
-          level: box.dataset.level,
-          submittedAnswer: stepsText,
-          correctAnswer: solutionText,
-          isCorrect: isOk,
-          score: gradeRes.score
-        });
-
-        if (isOk) correctCount++;
-
-        if ($$('.practice-question[data-done="yes"]').length === currentAnalysis.generatedExercises.length) {
-          $('#finishPractice').disabled = false;
-        }
-      } catch (err) {
-        btn.disabled = false;
-        btn.textContent = 'Nộp bài giải';
-        textarea.disabled = false;
-        alert('Lỗi chấm bài: ' + err.message);
-      }
-    };
-  });
-}
-
-const escapeHtml=value=>String(value||'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-
-function demoReview(){
-  const wrong=practiceAttempts.filter(x=>!x.isCorrect);
-  return {
-    summary: wrong.length ? `Bạn có ${wrong.length} câu cần lưu ý về bước giải hoặc phép tính.` : 'Bạn đã giải rất tốt và đầy đủ các bước biến đổi.',
-    mistakes: wrong.map(x=>({steps:[`Đề bài: ${x.question}`, `Lời giải chuẩn: ${x.correctAnswer}`]})),
-    studyPlanner:{
-      today: wrong.length ? `Làm lại ${wrong.length} bài chưa đạt điểm tối đa, chú ý không làm tắt bước.` : 'Làm thêm các bài toán cùng chủ đề để rèn luyện tốc độ.',
-      tomorrow: `Ôn tiếp kiến thức ${currentAnalysis.knowledgePoint.name}.`,
-      review: 'Xem lại các quy tắc biến đổi và công thức toán THCS đã dùng.'
-    }
-  };
-}
-
-function renderReview(summary,feedback,total){
-  const wrong=practiceAttempts.filter(x=>!x.isCorrect);
-  const errors=wrong.map((attempt,index)=>{
-    const cleanQuestion=attempt.question.replace(/^(?:Dễ hơn|Tương đương|Nâng cao)\s*/i,'');
-    return `
-      <article class="review-mistake">
-        <b>Câu ${index+1} cần xem lại</b>
-        <p class="review-question">${escapeHtml(cleanQuestion)}</p>
-        <p><strong>Bài làm của bạn:</strong></p>
-        <pre style="white-space:pre-wrap; background:#fff; padding:8px 10px; border-radius:6px; font-family:inherit;">${escapeHtml(attempt.submittedAnswer)}</pre>
-        <p class="solution-label"><strong>Gợi ý biến đổi chuẩn:</strong> ${cleanBreakLines(escapeHtml(attempt.correctAnswer))}</p>
-      </article>
-    `;
-  }).join('');
-  const fallback={today:wrong.length?`Làm lại ${wrong.length} câu sai, ghi rõ từng phép tính.`:'Làm thêm câu cùng dạng để duy trì kết quả tốt.',tomorrow:`Xem trước kiến thức ${currentAnalysis.knowledgePoint.name}.`,review:'Ôn lại các bước tính đã sai trước khi làm bài mới.'};
-  const planner={...fallback,...(feedback.studyPlanner||{})};
-  summary.innerHTML=`<b>Kết quả luyện tập: ${correctCount}/${total} bài đạt điểm tuyệt đối</b><p>${cleanBreakLines(escapeHtml(feedback.summary))}</p>${errors?`<div class="review-mistakes">${errors}</div>`:''}<section class="study-planner"><p class="planner-kicker">STUDY PLANNER</p><h4>Kế hoạch ôn tập của bạn</h4><div><b>📝 BTVN hôm nay</b><span>${cleanBreakLines(escapeHtml(planner.today))}</span></div><div><b>📖 Xem trước ngày mai</b><span>${cleanBreakLines(escapeHtml(planner.tomorrow))}</span></div><div><b>💡 Ôn bài cũ + lỗi còn hổng</b><span>${cleanBreakLines(escapeHtml(planner.review))}</span></div></section>`;
-  renderMath(summary);
-}
-
-document.addEventListener('click',async event=>{
-  if(event.target.id==='finishPractice'){
-    const summary=$('#practiceSummary'),total=currentAnalysis.generatedExercises.length;
-    goStep(3);
-    summary.textContent='AI đang tổng hợp các bài tự luận và đưa nhận xét…';
-    try{
-      const feedback=window.LEARNING_DEMO_MODE?demoReview():await HomeworkAnalysisService.reviewPractice({topic:currentAnalysis.knowledgePoint.name,detectedErrors:currentAnalysis.learningErrors,attempts:practiceAttempts});
-      renderReview(summary,feedback,total);
-
-      if (window.MathFixAuth?.savePractice) {
-        window.MathFixAuth.savePractice(currentAnalysis.knowledgePoint.name, correctCount, total, practiceAttempts);
-      }
-    }catch(error){
-      summary.textContent=`Bạn hoàn thành ${correctCount}/${total} bài. AI chưa thể tạo nhận xét chi tiết: ${error.message}`;
-    }
-  }
-});
-
-function goStep(step){
-  const current=$('.path-step.active'),next=$(`.path-step[data-step="${step}"]`);
-  current.classList.remove('active');
-  next.classList.add('active');
-  $$('.path-progress i').forEach((item,index)=>item.classList.toggle('active',index<step));
-  renderMath(next);
-}
+              <span class="lev
