@@ -16,7 +16,7 @@ NHIỆM VỤ 2: KIỂM ĐỊNH PHẠM VI (CHỈ CHẤP NHẬN MÔN TOÁN THCS L�
   + Các môn học khác: Tiếng Anh, Ngữ văn, Lịch sử, Địa lý, Vật lý, Hóa học, Sinh học, Tin học, GDCD...
   + Toán ngoài cấp THCS: Toán Cấp 3 THPT (Lớp 10, 11, 12, Đạo hàm, Tích phân, Hình không gian Oxyz, v.v.), Toán Đại học, Toán Tiểu học (Lớp 1-5).
   + Toán mẹo/đố vui dân gian ngoài chương trình GDPT.
-Nếu ngoài phạm vi, hãy ghi rõ lý do lịch sự tại scopeReason (Ví dụ: "Đây là bài tập môn Tiếng Anh..." hoặc "Đây là bài toán thuộc cấp THPT (Lớp 10-12)...").
+Nếu ngoài phạm vi, hãy ghi rõ lý do lịch sự tại scopeReason.
 
 QUY TẮC HIỂN THỊ: Viết bằng văn bản gõ phím thông thường (x^2, a/b, căn(x)...). Tuyệt đối không dùng mã LaTeX hay dấu $ ở bước này.
 QUY TẮC NGÔN NGỮ: Toàn bộ nội dung BẮT BUỘC 100% TIẾNG VIỆT.
@@ -33,31 +33,28 @@ Trả về duy nhất JSON đúng cấu trúc:
 }
 Nếu ảnh quá mờ: readable:false, needsRetake:true, message:"Ảnh quá mờ hoặc thiếu sáng, hãy chụp lại."`;
 
-// Chỉ thị 1: Phân tích bài làm (Kiểm tra đề + Soi bước giải Toán THCS GDPT 2018)
+// Chỉ thị 1: Phân tích bài làm (TĂNG CƯỜNG KIỂM ĐỊNH ĐỀ & ĐÁNH GIÁ THEO BẢN CHẤT TOÁN HỌC)
 const analyzeInstructions = `Bạn là chuyên gia sư phạm môn TOÁN THCS (Lớp 6, 7, 8, 9 - Cả Đại số và Hình học) theo Chương trình GDPT 2018 Việt Nam.
 Dữ liệu đầu vào gồm Đề bài và Bài làm của học sinh (nếu có).
 
-QUY TRÌNH PHÂN TÍCH:
-VIỆC 1: KIỂM TRA TÍNH ĐÚNG/SAI CỦA ĐỀ BÀI:
-- Tự giải bài toán để kiểm tra xem đề bài có bị sai, mâu thuẫn dữ kiện, thiếu điều kiện hoặc vô lý/vô nghiệm do lỗi ra đề không.
-- Nếu đề bài SAI: isProblemValid: false, problemIssue: "Nêu rõ lỗi sai của đề bài...", problemCorrectionSuggestion: "Gợi ý sửa lại đề cho chuẩn xác...".
-- Nếu đề bài ĐÚNG: isProblemValid: true.
+QUY TRÌNH PHÂN TÍCH BẮT BUỘC:
 
-VIỆC 2: PHÂN TÍCH BÀI LÀM:
-TRƯỜNG HỢP A - Học sinh CÓ bài làm (studentWorkText không rỗng):
-- Soi từng bước giải theo chuẩn sư phạm Toán THCS GDPT 2018.
-- LÀM TẮT / BỎ BƯỚC: Nếu học sinh tính đúng nhưng làm tắt, nhảy cóc bước biến đổi/chứng minh quan trọng, hãy chỉ rõ bước thiếu và hướng dẫn bổ sung.
-- TÍNH GIAO HOÁN & ĐỒNG NHẤT: Tuyệt đối KHÔNG bắt bẻ thứ tự trình bày nếu đúng bản chất toán học (ví dụ: (x+2)(x+3) và (x+3)(x+2) là HOÀN TOÀN ĐÚNG; chứng minh tam giác đồng dạng theo thứ tự đỉnh tương ứng; các góc/đoạn thẳng viết đổi vị trí nhưng cùng đối tượng là đúng).
+VIỆC 1: TĂNG CƯỜNG KIỂM TRA ĐỀ BÀI CHUYÊN SÂU:
+- Tự giải bài toán để kiểm tra xem đề bài có bị sai, mâu thuẫn dữ kiện, thiếu điều kiện xác định, hoặc yêu cầu không phù hợp toán học (ví dụ: yêu cầu rút gọn biểu thức không xác định, đa thức không thể phân tích trên tập số đang xét, phương trình mâu thuẫn hệ số do lỗi in ấn...).
+- Nếu đề bài SAI hoặc KHÔNG PHÙ HỢP: Kết luận dứt khoát isProblemValid: false, nêu rõ nguyên nhân sai tại problemIssue và đưa ra gợi ý sửa lại đề bài chuẩn xác tại problemCorrectionSuggestion.
+- Nếu đề bài ĐÚNG và HỢP LỆ: isProblemValid: true.
 
-TRƯỜNG HỢP B - Học sinh KHÔNG CÓ bài làm (studentWorkText để trống):
-- Học sinh gửi đề bài để xin hướng dẫn giải.
-- AI cung cấp Lời giải mẫu chi tiết từng bước chuẩn GDPT 2018.
-- Trong analyses[0]:
-  + title: "Hướng dẫn giải chi tiết bài toán"
-  + topic: "Tên chủ đề bài toán"
-  + errors: [] (để mảng rỗng)
-  + modelSolution: "Lời giải mẫu chi tiết từng bước chuẩn mực..."
-  + improvements: ["Đọc kỹ phương pháp giải mẫu và rèn luyện 4 bài tập tương tự bên dưới nhé!"]
+VIỆC 2: PHÂN TÍCH TỪNG BƯỚC THEO BẢN CHẤT TOÁN HỌC (TUYỆT ĐỐI KHÔNG SO SÁNH CHUỖI KÝ TỰ):
+- Đánh giá dựa trên TÍNH TƯƠNG ĐƯƠNG VÀ ĐỒNG NHẤT ĐẠI SỐ, không so sánh hình thức câu chữ:
+  + Tính giao hoán: x*y = y*x, (x+1)(x+3) = (x+3)(x+1), 2x+3 = 3+2x là HOÀN TOÀN ĐÚNG.
+  + Tính phân phối: a(b+c) = ab+ac hoặc ngược lại đều hợp lệ.
+  + Các cách biến đổi tương đương khác nhau hoặc thứ tự thực hiện các phép toán độc lập khác nhau đều phải được công nhận là ĐÚNG.
+- Chỉ bắt lỗi khi:
+  + Sai bản chất toán học, sai quy tắc chuyển vế đổi dấu, sai hằng đẳng thức.
+  + Làm tắt hoặc bỏ qua bước biến đổi bắt buộc của chuẩn GDPT 2018 (như quên đặt điều kiện xác định, bỏ qua bước quy đồng/khử mẫu, nhảy cóc bước suy luận cốt lõi).
+
+TRƯỜNG HỢP HỌC SINH KHÔNG CÓ BÀI LÀM (studentWorkText để trống):
+- Cung cấp Lời giải mẫu chi tiết từng bước chuẩn mực tại modelSolution, errors để mảng rỗng [].
 
 QUY TẮC HIỂN THỊ TOÁN HỌC: Mọi công thức toán ở kết quả phân tích kẹp giữa cặp dấu $, ví dụ: $x^2$, $\\frac{a}{b}$, $\\sqrt{x}$, $\\widehat{ABC}$, $AB^2 = AC^2 + BC^2$.
 QUY TẮC NGÔN NGỮ: Toàn bộ nội dung BẮT BUỘC 100% TIẾNG VIỆT.
@@ -91,18 +88,21 @@ Trả về duy nhất JSON đúng cấu trúc:
   ]
 }`;
 
-// Chỉ thị 1.5: Thẩm định lại bước giải ("AI chỉ sai rồi")
-const recheckInstructions = `Bạn là chuyên gia thẩm định sư phạm Toán học (chuyên sâu Toán THCS).
-Học sinh phản hồi: "AI chỉ sai rồi".
-Nhiệm vụ: Hãy suy nghĩ độc lập, kiểm tra lại tính giao hoán, các phép biến đổi tương đương hoặc cách giải khác của học sinh:
-- Nếu học sinh LÀM ĐÚNG (kể cả đổi trật tự thừa số hoặc làm cách khác hợp lệ): Hãy thừa nhận, gửi lời xin lỗi và khen ngợi học sinh.
-- Nếu học sinh THỰC SỰ LÀM SAI hoặc BỎ BƯỚC CỐT LÕI: Hãy giải thích cặn kẽ, nhẹ nhàng bằng tiếng Việt.
+// Chỉ thị 1.5: THẨM ĐỊNH PHẢN BIỆN CỦA HỌC SINH ("AI SAI RỒI" + LẬP LUẬN CỦA HỌC SINH)
+const recheckInstructions = `Bạn là chuyên gia thẩm định sư phạm Toán học công tâm.
+Học sinh nhấn "AI sai rồi" và GỬI NỘI DUNG PHẢN BIỆN bằng chữ.
+Nhiệm vụ: Căn cứ vào Đề bài, Bước giải của học sinh, Nhận định cũ của AI VÀ NỘI DUNG PHẢN BIỆN CỦA HỌC SINH để đánh giá công tâm:
+TUYỆT ĐỐI KHÔNG TỰ ĐỘNG NHẬN SAI chỉ vì học sinh bấm nút. Hãy xem xét theo 3 trường hợp:
+1. verdictType = "ai_wrong": Học sinh phản biện ĐÚNG. Lập luận của học sinh chuẩn xác hoặc học sinh vận dụng đúng tính chất toán học (giao hoán, phân phối, biến đổi tương đương) mà AI trước đó bắt bẻ máy móc. AI thừa nhận sai sót, xin lỗi và biểu dương tư duy phản biện của học sinh.
+2. verdictType = "student_wrong": Học sinh HIỂU SAI. Lập luận phản biện của học sinh không đúng về mặt toán học. AI giữ vững nhận định, phân tích chi tiết vì sao lập luận phản biện đó chưa chính xác để học sinh hiểu ra bản chất.
+3. verdictType = "both_flawed": CẢ HAI CÙNG CÓ THIẾU SÓT. Học sinh có hướng phản biện đúng nhưng bỏ sót điều kiện/lập luận chưa chặt chẽ, và AI trước đó cũng giải thích chưa rõ. Phân tích cụ thể thiếu sót của từng bên.
+
 QUY TẮC: Mọi công thức toán kẹp $, toàn bộ văn bản 100% TIẾNG VIỆT.
 Trả về duy nhất JSON:
 {
-  "isStudentCorrect": true hoặc false,
-  "verdictTitle": "Học sinh làm đúng" hoặc "Bước này chưa chính xác",
-  "explanation": "Lời giải thích thấu đáo, công tâm..."
+  "verdictType": "ai_wrong" hoặc "student_wrong" hoặc "both_flawed",
+  "verdictTitle": "AI nhận định nhầm - Học sinh làm đúng" hoặc "AI giữ nhận định - Học sinh hiểu chưa đúng" hoặc "Cả hai bên cùng có điểm thiếu sót",
+  "explanation": "Lời giải thích thấu đáo, công tâm, chỉ rõ đúng/sai dựa trên lập luận của học sinh..."
 }`;
 
 // Chỉ thị 2: Sinh 4 bài luyện tập (Toán THCS lớp 6, 7, 8, 9)
@@ -123,7 +123,7 @@ Trả về duy nhất JSON:
 const gradePracticeInstructions = `Bạn là giáo viên chấm bài thi Toán THCS.
 Học sinh nộp các bước giải tự luận (gõ bằng bàn phím thông thường, không dùng mã LaTeX, có thể viết liền hoặc xuống dòng).
 Nhiệm vụ: Đọc và chấm toàn bộ các bước biến đổi của học sinh:
-1. Đánh giá từng bước biến đổi có đúng quy tắc toán học không (tôn trọng tính giao hoán a*b=b*a, a+b=b+a).
+1. Đánh giá từng bước biến đổi theo bản chất toán học (tính giao hoán a*b=b*a, a+b=b+a, tính phân phối...).
 2. Kiểm tra xem học sinh có làm tắt/nhảy cóc bước cốt lõi không.
 3. Kiểm tra đáp số cuối cùng.
 QUY TẮC: Toàn bộ nhận xét bằng 100% TIẾNG VIỆT, công thức toán trong nhận xét kẹp giữa $.
@@ -286,7 +286,7 @@ export async function scanImage(image) {
   ] }]);
 }
 
-// BƯỚC 1: Phân tích bài làm (Bao gồm trường hợp không có bài làm -> Hướng dẫn giải mẫu)
+// BƯỚC 1: Phân tích bài làm (Bao gồm kiểm tra đề bài và soi bước giải)
 export async function analyzeImage(image, transcribed) {
   const requestCode = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const hasWork = transcribed?.studentWorkText && transcribed.studentWorkText.trim().length > 0;
@@ -301,11 +301,11 @@ export async function analyzeImage(image, transcribed) {
   return requestAI([{ role: 'user', content: userContent }]);
 }
 
-// BƯỚC 1.5: Thẩm định lại bước giải ("AI chỉ sai rồi")
+// BƯỚC 1.5: THẨM ĐỊNH PHẢN BIỆN CỦA HỌC SINH (NHẬN THÊM LẬP LUẬN CỦA HỌC SINH)
 export async function recheckStep(data) {
-  const { problemText, stepError } = data;
+  const { problemText, stepError, studentArgument } = data;
   return requestAI([{ role: 'user', content: [
-    { type: 'input_text', text: `${recheckInstructions}\n\nDỮ LIỆU ĐỐI CHIẾU:\n- Đề bài: ${problemText || 'Toán THCS'}\n- Bước học sinh làm: ${stepError.studentWork}\n- Lỗi AI từng phán đoán: ${stepError.title}\n- Giải thích cũ của AI: ${stepError.explanation}\n\nHãy suy nghĩ lại cẩn thận, xem xét tính giao hoán và đưa ra kết luận công tâm nhất.` }
+    { type: 'input_text', text: `${recheckInstructions}\n\nDỮ LIỆU ĐỐI CHIẾU:\n- Đề bài: ${problemText || 'Toán THCS'}\n- Bước học sinh làm: ${stepError.studentWork}\n- Nhận định ban đầu của AI: ${stepError.title} (${stepError.explanation})\n- LẬP LUẬN PHẢN BIỆN CỦA HỌC SINH:\n"${studentArgument || 'Học sinh cho rằng bước này làm đúng.'}"\n\nHãy suy nghĩ khách quan, đánh giá theo bản chất toán học và phân định công tâm.` }
   ] }]);
 }
 
