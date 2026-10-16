@@ -154,4 +154,194 @@ function extractText(body) {
 }
 
 // BỘ TỰ ĐỘNG VÁ LỖI JSON CHUẨN XÁC — TUYỆT ĐỐI KHÔNG CHÈN DẤU PHẨY VÀO PHÂN SỐ LATEX \frac{a}{b}
-functi
+function repairJson(jsonStr) {
+  let str = jsonStr.trim();
+  let result = '';
+  let inString = false;
+  let i = 0;
+  const stack = [];
+
+  while (i < str.length) {
+    const char = str[i];
+
+    if (!inString) {
+      if (char === '"') {
+        inString = true;
+        result += char;
+        i++;
+      } else if (char === '{' || char === '[') {
+        stack.push(char);
+        result += char;
+        i++;
+      } else if (char === '}' || char === ']') {
+        const top = stack[stack.length - 1];
+        if ((char === '}' && top === '{') || (char === ']' && top === '[')) stack.pop();
+        result += char;
+        i++;
+
+        // CHỈ CHÈN DẤU PHẨY KHI Ở NGOÀI CHUỖI JSON (giữa 2 object hoặc 2 mảng)
+        const rest = str.slice(i).trimStart();
+        if (rest.startsWith('{') || rest.startsWith('[')) {
+          const nextNonSpace = str.slice(i).search(/\S/);
+          if (nextNonSpace !== -1 && (str[i + nextNonSpace] === '{' || str[i + nextNonSpace] === '[')) {
+            result += ',';
+          }
+        }
+      } else {
+        result += char;
+        i++;
+      }
+    } else {
+      // BÊN TRONG CHUỖI VĂN BẢN: GIỮ NGUYÊN VẸN 100% CẤU TRÚC PHÂN SỐ \frac{tử}{mẫu}
+      if (char === '"') {
+        const lookahead = str.slice(i + 1, i + 15).trimStart();
+        if (lookahead.length === 0 || /^[,}\]:]/.test(lookahead)) {
+          inString = false;
+          result += char;
+          i++;
+        } else {
+          result += "'";
+          i++;
+        }
+      } else if (char === '\\') {
+        const next = str[i + 1];
+        if (!next) {
+          result += '\\\\';
+          i++;
+        } else if (next === '"' || next === '\\' || next === '/') {
+          result += '\\' + next;
+          i += 2;
+        } else if (next === 'b' || next === 'f' || next === 'n' || next === 'r' || next === 't') {
+          const afterNext = str[i + 2];
+          if (afterNext && /[a-zA-Z]/.test(afterNext)) {
+            result += '\\\\' + next;
+            i += 2;
+          } else {
+            result += '\\' + next;
+            i += 2;
+          }
+        } else if (next === 'u' && /^[0-9a-fA-F]{4}$/.test(str.slice(i + 2, i + 6))) {
+          result += str.slice(i, i + 6);
+          i += 6;
+        } else {
+          result += '\\\\' + next;
+          i += 2;
+        }
+      } else if (char === '\n') {
+        result += '\\n';
+        i++;
+      } else if (char === '\r') {
+        i++;
+      } else if (char === '\t') {
+        result += '\\t';
+        i++;
+      } else {
+        result += char;
+        i++;
+      }
+    }
+  }
+
+  if (inString) result += '"';
+  result = result.replace(/,\s*$/, '');
+  while (stack.length > 0) {
+    const open = stack.pop();
+    if (open === '{') result += '}';
+    else if (open === '[') result += ']';
+  }
+
+  return result;
+}
+
+function parseJson(text) {
+  const match = text.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error('Mô hình không trả về dữ liệu hợp lệ.');
+  const cleaned = repairJson(match[0]);
+  return JSON.parse(cleaned);
+}
+
+async function requestAI(input) {
+  const key = process.env.OPENAI_API_KEY;
+  if (!key) throw new Error('Chưa cấu hình OPENAI_API_KEY trên Netlify.');
+  
+  const model = process.env.OPENAI_MODEL || 'gpt-5-mini';
+  
+  const payload = {
+    model: model,
+    store: false,
+    input: input,
+    max_output_tokens: 4096
+  };
+
+  if (model.includes('gpt-5') && !model.includes('nano')) {
+    payload.reasoning = { effort: 'minimal' };
+  }
+
+  const response = await fetch('https://api.openai.com/v1/responses', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) throw new Error('API key không hợp lệ hoặc đã bị thu hồi.');
+    if (response.status === 429) throw new Error('Tài khoản API chưa có credits hoặc đã chạm giới hạn sử dụng.');
+    throw new Error(`Dịch vụ AI trả về mã lỗi: ${response.status}.`);
+  }
+  return parseJson(extractText(await response.json()));
+}
+
+// BƯỚC 0: Quét chữ và kiểm định Toán THCS lớp 6, 7, 8, 9
+export async function scanImage(image) {
+  if (typeof image !== 'string' || !image.startsWith('data:image/')) throw new Error('Ảnh tải lên không hợp lệ.');
+  const requestCode = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return requestAI([{ role: 'user', content: [
+    { type: 'input_text', text: `${scanInstructions}\n\nMã phiên: ${requestCode}.` },
+    { type: 'input_image', image_url: image, detail: 'high' }
+  ] }]);
+}
+
+// BƯỚC 1: Phân tích bài làm (Bao gồm trường hợp không có bài làm -> Hướng dẫn giải mẫu)
+export async function analyzeImage(image, transcribed) {
+  const requestCode = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const hasWork = transcribed?.studentWorkText && transcribed.studentWorkText.trim().length > 0;
+  
+  const contextNote = `\nNỘI DUNG ĐÃ ĐỐI CHIẾU:\n- Đề bài: ${transcribed?.problemText || ''}\n- Bài làm học sinh: ${hasWork ? transcribed.studentWorkText : '(Học sinh chưa có bài làm, chỉ gửi đề bài để xin hướng dẫn giải mẫu)'}\n`;
+  
+  const userContent = [{ type: 'input_text', text: `${analyzeInstructions}${contextNote}\nMã phiên: ${requestCode}.` }];
+  if (typeof image === 'string' && image.startsWith('data:image/')) {
+    userContent.push({ type: 'input_image', image_url: image, detail: 'high' });
+  }
+
+  return requestAI([{ role: 'user', content: userContent }]);
+}
+
+// BƯỚC 1.5: Thẩm định lại bước giải ("AI chỉ sai rồi")
+export async function recheckStep(data) {
+  const { problemText, stepError, studentArgument } = data;
+  return requestAI([{ role: 'user', content: [
+    { type: 'input_text', text: `${recheckInstructions}\n\nDỮ LIỆU ĐỐI CHIẾU:\n- Đề bài: ${problemText || 'Toán THCS'}\n- Bước học sinh làm: ${stepError.studentWork}\n- Nhận định ban đầu của AI: ${stepError.title} (${stepError.explanation})\n- LẬP LUẬN PHẢN BIỆN CỦA HỌC SINH:\n"${studentArgument || 'Học sinh cho rằng bước này làm đúng.'}"\n\nHãy suy nghĩ khách quan, đánh giá theo bản chất toán học và phân định công tâm.` }
+  ] }]);
+}
+
+// BƯỚC 2: Sinh 4 bài luyện tập
+export async function generateExercises(data) {
+  const { topic, errors } = data;
+  return requestAI([{ role: 'user', content: [
+    { type: 'input_text', text: `${exerciseInstructions}\n\nChủ đề: ${topic || 'Toán THCS'}\nNội dung cần ôn tập: ${JSON.stringify(errors || [])}` }
+  ] }]);
+}
+
+// BƯỚC 2.5: Chấm bài giải tự luận từng bước của học sinh
+export async function gradePractice(data) {
+  const { question, studentSteps, solution } = data;
+  return requestAI([{ role: 'user', content: [
+    { type: 'input_text', text: `${gradePracticeInstructions}\n\nDỮ LIỆU CHẤM BÀI:\n- Đề bài: ${question}\n- Lời giải mẫu chuẩn: ${solution}\n- Bài làm tự luận học sinh gõ vào:\n${studentSteps}\n\nHãy phân tích và nhận xét từng bước biến đổi.` }
+  ] }]);
+}
+
+// BƯỚC 3: Nhận xét sau bài luyện tập
+export async function reviewPractice(data) {
+  if (!Array.isArray(data.attempts) || !data.attempts.length) throw new Error('Chưa có đáp án để AI nhận xét.');
+  return requestAI([{ role: 'user', content: [{ type: 'input_text', text: `${reviewInstructions}\n\nDữ liệu:\n${JSON.stringify(data)}` }] }]);
+}
