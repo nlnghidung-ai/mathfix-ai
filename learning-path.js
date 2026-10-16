@@ -25,36 +25,30 @@ function toPlainText(str) {
       .replace(/\\/g, '');
   });
 
-  // Chuyển ký hiệu khác kể cả khi AI quên bọc dấu $
   s = s.replace(/\\(?:neq|ne)\b/g, ' ≠ ')
        .replace(/\\n/g, '\n');
   return s.trim();
 }
 
-// HÀM TÁCH BẠCH VÀ BẢO VỆ KÝ HIỆU TOÁN (XỬ LÝ TRIỆT ĐỂ LỖI x e1 VÀ DẤU $)
+// HÀM LÀM SẠCH VÀ BẢO ĐẢM KHOẢNG CÁCH CHỮ TIẾNG VIỆT (GỠ CHỮ TIẾNG VIỆT KHỎI DẤU $)
 function cleanBreakLines(rawStr) {
   if (!rawStr) return '';
   let str = String(rawStr);
 
-  // 1. GỠ CHỮ TIẾNG VIỆT BỊ AI BỌC NHẦM VÀO TRONG DẤU $...$
-  // Nếu bên trong $...$ có chữ tiếng Việt có dấu (ví dụ: $không xác định tại x=1$), tự động giải phóng chữ ra ngoài
-  str = str.replace(/\$([^\$]*[àáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđ][^\$]*)\$/gi, (_, content) => {
-    // Tách phần chữ tiếng Việt và công thức toán thuần túy (nếu có công thức x=1 thì bọc lại $x=1$)
-    return content.replace(/([a-zA-Z0-9_\^\\{}+\-*/=<>≤≥≠\s]+\s*=\s*[a-zA-Z0-9_\^\\{}+\-*/=<>≤≥≠\s]+)/g, '$$$1$$');
-  });
+  // 1. GỠ BỎ HOÀN TOÀN DẤU $ NẾU BÊN TRONG CÓ CHỮ TIẾNG VIỆT CÓ DẤU HOẶC TỪ NGỮ (Chống lỗi dính chữ)
+  str = str.replace(/\$([^\$]*[àáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđ][^\$]*)\$/gi, '$1');
+  
+  // Gỡ bỏ dấu $ nếu bên trong chứa các từ thông dụng tiếng Việt
+  str = str.replace(/\$([^\$]*(?:không|xác|định|tại|mẫu|bằng|nên|thay|vào|được|thức|rút|gọn|bước|kết|luận)[^\$]*)\$/gi, '$1');
 
-  // 2. NẾU AI VIẾT \ne HOẶC \neq NGOÀI DẤU $ (ví dụ 'x \ne 1'): TỰ ĐỘNG BẢO VỆ THÀNH ≠ ĐỂ KHÔNG BỊ BIẾN THÀNH e1
+  // 2. Chuyển đổi an toàn ký hiệu khác nếu nằm ngoài dấu $
   str = str.replace(/(^|[^\$])\\(?:neq|ne)\b/g, '$1 ≠ ');
 
-  // 3. TÁCH CHUỖI THÀNH 2 PHẦN: CÔNG THỨC VÀ VĂN BẢN
+  // 3. Tách chuỗi thành công thức và văn bản để xuống dòng an toàn
   const parts = str.split(/(\$\$[\s\S]*?\$\$|\$[^\$]*?\$)/g);
-
   for (let i = 0; i < parts.length; i++) {
     const isMath = parts[i].startsWith('$') && parts[i].endsWith('$');
-    if (isMath) {
-      // Công thức toán học: Giữ nguyên 100%
-    } else {
-      // Văn bản thường bên ngoài: Xuống dòng an toàn
+    if (!isMath) {
       parts[i] = parts[i].replace(/\\n/g, '\n');
     }
   }
@@ -66,45 +60,18 @@ function cleanBreakLines(rawStr) {
 function renderMath(target){
   const el = target || document.body;
   const run = () => {
-    if (typeof window.katex !== 'undefined') {
+    if (typeof window.renderMathInElement === 'function') {
       try {
-        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-        const textNodes = [];
-        while (walker.nextNode()) {
-          const parent = walker.currentNode.parentNode;
-          if (parent && !['SCRIPT', 'STYLE', 'TEXTAREA', 'INPUT', 'PRE', 'CODE'].includes(parent.tagName) && !parent.closest('.katex')) {
-            const val = walker.currentNode.nodeValue;
-            if (val && (/\$([^$]+)\$/.test(val) || /\\(frac|dfrac|tfrac|sqrt|times|div|pm|ne|neq)/.test(val) || /\b[a-zA-Z0-9]\^\{?[0-9a-zA-Z+-]+\}?/.test(val))) {
-              textNodes.push(walker.currentNode);
-            }
-          }
-        }
-
-        textNodes.forEach(node => {
-          let text = node.nodeValue;
-          if (!text) return;
-
-          text = text.replace(/(^|[^\$])(\\(?:frac|dfrac|tfrac)\{[^{}]+\}\{[^{}]+\})/g, '$1$$$2$$');
-          text = text.replace(/(^|[^\$])(\\sqrt(?:\[\d+\])?\{[^{}]+\})/g, '$1$$$2$$');
-
-          let html = text.replace(/\$\$([^$]+)\$\$/g, (_, math) => {
-            try { return window.katex.renderToString(math.trim(), { displayMode: true, throwOnError: false }); }
-            catch { return `$$${math}$$`; }
-          });
-
-          html = html.replace(/\$([^$]+)\$/g, (_, math) => {
-            try { return window.katex.renderToString(math.trim(), { displayMode: false, throwOnError: false }); }
-            catch { return `$${math}$`; }
-          });
-
-          if (html !== node.nodeValue) {
-            const span = document.createElement('span');
-            span.innerHTML = html;
-            node.parentNode?.replaceChild(span, node);
-          }
+        window.renderMathInElement(el, {
+          delimiters: [
+            { left: '$$', right: '$$', display: true },
+            { left: '$', right: '$', display: false }
+          ],
+          ignoredTags: ['script', 'style', 'textarea', 'input', 'pre', 'code'],
+          throwOnError: false
         });
-      } catch (err) {
-        console.warn('Lỗi renderMath:', err);
+      } catch (e) {
+        console.warn('renderMath error:', e);
       }
     }
   };
@@ -113,6 +80,24 @@ function renderMath(target){
   setTimeout(run, 150);
   setTimeout(run, 400);
 }
+
+// HÀM CHUYỂN NHANH VỀ MÀN HÌNH CHỤP / TẢI ẢNH MỚI (DÀNH CHO NÚT "PHÂN TÍCH BÀI" TRÊN THANH TIÊU ĐỀ)
+window.goToUploadScreen = function() {
+  $('#resultPanel')?.classList.add('hidden');
+  $('#confirmPanel')?.classList.add('hidden');
+  $('#loadingPanel')?.classList.add('hidden');
+  $('.old-layout')?.classList.remove('hidden');
+
+  if (cropper) { cropper.destroy(); cropper = null; }
+  imageUrl = '';
+  originalImageUrl = '';
+  if ($('#imageInput')) $('#imageInput').value = '';
+  $('#previewContainer')?.classList.add('hidden');
+  $('#emptyDropLabel')?.classList.remove('hidden');
+  if ($('#analyzeBtn')) $('#analyzeBtn').disabled = true;
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
 
 function initCropper(src){
   if(cropper){ cropper.destroy(); cropper = null; }
@@ -355,7 +340,7 @@ function showResult(result){
   $('#resultPanel').classList.remove('hidden');
   $('#resultImage').src=imageUrl;
 
-  // 1. KIỂM ĐỊNH ĐỀ BÀI (ĐÃ ĐƯỢC LÀM SẠCH KÝ HIỆU KHÁC ≠ VÀ CHỮ TIẾNG VIỆT)
+  // 1. KIỂM ĐỊNH ĐỀ BÀI
   const invalidBanner = $('#problemInvalidBanner');
   if (result.isProblemValid === false) {
     invalidBanner.classList.remove('hidden');
@@ -411,7 +396,7 @@ function showAnalysis(index){
   $('#problemNavigator').innerHTML=sets.length>1?`<div class="problem-nav"><span class="problem-nav-label">Ảnh có ${sets.length} bài cần xem lại. Chọn một bài:</span>${sets.map((item,itemIndex)=>`<button class="problem-tab ${itemIndex===index?'active':''}" data-analysis="${itemIndex}">${item.title||`Bài ${itemIndex+1}`}</button>`).join('')}</div>`:'';
   $$('.problem-tab').forEach(button=>button.onclick=()=>showAnalysis(Number(button.dataset.analysis)));
   
-  // HIỂN THỊ CÁC THẺ LỖI SAI
+  // HIỂN THỊ CÁC THẺ LỖI SAI (ĐÃ LÀM SẠCH KÝ HIỆU VÀ CÔNG THỨC TOÁN)
   if (r.learningErrors && r.learningErrors.length > 0) {
     $('#errorList').innerHTML=r.learningErrors.map((e, errIdx)=>`
       <article class="error-card" id="error-card-${errIdx}">
