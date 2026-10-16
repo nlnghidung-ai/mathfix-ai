@@ -14,7 +14,6 @@
   <link rel="stylesheet" href="learning-path.css">
 
   <style>
-    /* Camera UI */
     .camera-box {
       position: relative !important;
       overflow: hidden;
@@ -92,7 +91,6 @@
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     }
 
-    /* Cropper Toolbar */
     .crop-wrapper {
       width: 100%;
       max-height: 480px;
@@ -142,10 +140,117 @@
       border-color: #3b82f6;
     }
 
-    .level-tag.easier {
+    .level-tag.easier { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+
+    /* Ô NHẬP LIỆU CHỈNH SỬA VĂN BẢN QUÉT ĐƯỢC */
+    .edit-hint {
+      background: #eff6ff;
+      border: 1px dashed #60a5fa;
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: #1e40af;
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .confirm-textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 15px;
+      line-height: 1.6;
+      color: #0f172a;
+      background: #ffffff;
+      resize: vertical;
+      box-sizing: border-box;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .confirm-textarea:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    /* BẢNG CẢNH BÁO ĐỀ BÀI BỊ SAI */
+    .problem-invalid-banner {
+      background: #fef2f2;
+      border: 1.5px solid #f87171;
+      border-radius: 14px;
+      padding: 16px 18px;
+      margin-bottom: 24px;
+      color: #991b1b;
+    }
+    .problem-invalid-banner h3 {
+      margin: 0 0 6px 0;
+      font-size: 16px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .problem-invalid-banner p {
+      margin: 0 0 8px 0;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .problem-suggestion {
+      background: #fff;
+      border: 1px dashed #fca5a5;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #7f1d1d;
+    }
+
+    /* Ô NHẬP LỜI GIẢI TỰ LUẬN 2-4 DÒNG TRONG PHẦN LUYỆN TẬP */
+    .practice-solution-box {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .practice-steps-textarea {
+      width: 100%;
+      min-height: 80px;
+      padding: 10px 14px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #1e293b;
+      resize: vertical;
+      box-sizing: border-box;
+      outline: none;
+    }
+    .practice-steps-textarea:focus {
+      border-color: #2563eb;
+    }
+    .practice-grade-result {
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.5;
+      margin-top: 6px;
+    }
+    .practice-grade-result.correct {
       background: #ecfdf5;
-      color: #059669;
-      border: 1px solid #a7f3d0;
+      border: 1px solid #6ee7b7;
+      color: #065f46;
+    }
+    .practice-grade-result.partial {
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      color: #92400e;
+    }
+    .practice-grade-result.wrong {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
     }
 
     /* Nút Thẩm định lại: AI chỉ sai rồi */
@@ -169,35 +274,18 @@
       cursor: pointer;
       transition: all 0.2s;
     }
-    .btn-recheck-step:hover {
-      background: #fef3c7;
-    }
+    .btn-recheck-step:hover { background: #fef3c7; }
     .recheck-feedback {
       padding: 12px 14px;
       border-radius: 8px;
       font-size: 14px;
       line-height: 1.5;
     }
-    .recheck-feedback.correct {
-      background: #ecfdf5;
-      border: 1px solid #6ee7b7;
-      color: #065f46;
-    }
-    .recheck-feedback.wrong {
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-      color: #991b1b;
-    }
-    .error-card.acknowledged-correct {
-      border: 2px solid #10b981 !important;
-      background: #f0fdf4 !important;
-    }
-    .error-card.acknowledged-correct .severity {
-      background: #10b981 !important;
-      color: #fff !important;
-    }
+    .recheck-feedback.correct { background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46; }
+    .recheck-feedback.wrong { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+    .error-card.acknowledged-correct { border: 2px solid #10b981 !important; background: #f0fdf4 !important; }
+    .error-card.acknowledged-correct .severity { background: #10b981 !important; color: #fff !important; }
 
-    /* Màn hình Đối chiếu */
     .confirm-card {
       background: #ffffff;
       border: 1px solid #e2e8f0;
@@ -206,459 +294,75 @@
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
       margin-top: 16px;
     }
-    .confirm-header {
-      margin-bottom: 18px;
-      border-bottom: 1px solid #f1f5f9;
-      padding-bottom: 12px;
-    }
-    .confirm-header h2 {
-      font-size: 20px;
-      color: #0f172a;
-      margin: 0 0 6px 0;
-    }
-    .confirm-header p {
-      color: #64748b;
-      font-size: 14px;
-      margin: 0;
-    }
-    .confirm-fields {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-    .confirm-box {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      padding: 16px;
-    }
-    .confirm-box-title {
-      font-size: 13px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #475569;
-      margin-bottom: 8px;
-    }
-    .confirm-box-content {
-      color: #1e293b;
-      font-size: 15px;
-      line-height: 1.6;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-    .confirm-actions {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-    }
-    .btn-secondary {
-      background: #f1f5f9;
-      color: #475569;
-      border: 1px solid #cbd5e1;
-      padding: 12px 18px;
-      border-radius: 10px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .btn-secondary:hover {
-      background: #e2e8f0;
-      color: #0f172a;
-    }
-    .btn-primary {
-      background: #2563eb;
-      color: #ffffff;
-      border: none;
-      padding: 12px 24px;
-      border-radius: 10px;
-      font-weight: 700;
-      font-size: 15px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .btn-primary:hover {
-      background: #1d4ed8;
-    }
-    .katex {
-      font-size: 1.08em;
-      text-rendering: auto;
-    }
+    .confirm-header { margin-bottom: 18px; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px; }
+    .confirm-header h2 { font-size: 20px; color: #0f172a; margin: 0 0 6px 0; }
+    .confirm-header p { color: #64748b; font-size: 14px; margin: 0; }
+    .confirm-fields { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 24px; }
+    .confirm-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; }
+    .confirm-box-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; margin-bottom: 8px; }
+    .confirm-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+    .btn-secondary { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 12px 18px; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn-secondary:hover { background: #e2e8f0; color: #0f172a; }
+    .btn-primary { background: #2563eb; color: #ffffff; border: none; padding: 12px 24px; border-radius: 10px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.2s; }
+    .btn-primary:hover { background: #1d4ed8; }
 
-    /* GIAO DIỆN AUTH: NÚT ĐĂNG NHẬP HOẶC AVATAR TRÒN CÓ MENU ĐỔ XUỐNG */
-    .btn-open-login {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: #ffffff;
-      color: #374151;
-      border: 1px solid #d1d5db;
-      padding: 7px 16px;
-      border-radius: 999px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-    }
-    .btn-open-login:hover {
-      background: #f9fafb;
-      border-color: #9ca3af;
-    }
-    .avatar-dropdown-wrapper {
-      position: relative;
-    }
-    .avatar-trigger-btn {
-      background: none;
-      border: none;
-      padding: 0;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      outline: none;
-    }
-    .user-avatar-circle {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      border: 2px solid #3b82f6;
-      object-fit: cover;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
-      transition: transform 0.15s ease;
-    }
-    .avatar-trigger-btn:hover .user-avatar-circle {
-      transform: scale(1.06);
-    }
-    .user-dropdown-menu {
-      position: absolute;
-      top: 46px;
-      right: 0;
-      width: 230px;
-      background: #ffffff;
-      border-radius: 14px;
-      border: 1px solid #e2e8f0;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.12);
-      padding: 8px 0;
-      z-index: 500;
-      animation: fadeInMenu 0.15s ease;
-    }
-    @keyframes fadeInMenu {
-      from { opacity: 0; transform: translateY(-6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .user-menu-header {
-      padding: 8px 16px 10px;
-    }
-    .user-menu-name {
-      display: block;
-      font-size: 14px;
-      color: #0f172a;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .user-menu-email {
-      display: block;
-      font-size: 12px;
-      color: #64748b;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      margin-top: 2px;
-    }
-    .user-menu-divider {
-      height: 1px;
-      background: #f1f5f9;
-      margin: 4px 0;
-    }
-    .user-menu-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      width: 100%;
-      padding: 9px 16px;
-      font-size: 13px;
-      font-weight: 600;
-      color: #334155;
-      background: none;
-      border: none;
-      text-align: left;
-      text-decoration: none;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-    .user-menu-item:hover {
-      background: #f8fafc;
-      color: #0f172a;
-    }
-    .user-menu-item.text-danger {
-      color: #ef4444;
-    }
-    .user-menu-item.text-danger:hover {
-      background: #fef2f2;
-    }
+    .out-of-scope-card { background: #fffbeb; border: 1.5px solid #fcd34d; border-radius: 14px; padding: 18px 20px; margin-bottom: 20px; display: flex; gap: 14px; align-items: flex-start; }
+    .out-of-scope-icon { font-size: 26px; line-height: 1; }
+    .out-of-scope-content h3 { margin: 0 0 6px 0; color: #92400e; font-size: 16px; font-weight: 700; }
+    .out-of-scope-content p { margin: 0; color: #78350f; font-size: 14px; line-height: 1.5; }
 
-    /* MODAL ĐĂNG NHẬP / ĐĂNG KÝ */
-    .login-modal {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(15, 23, 42, 0.6);
-      backdrop-filter: blur(4px);
-      z-index: 1000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-    }
-    .login-modal-box {
-      background: #ffffff;
-      border-radius: 20px;
-      width: 100%;
-      max-width: 400px;
-      padding: 28px 24px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-      position: relative;
-    }
-    .login-modal-title {
-      font-size: 20px;
-      font-weight: 800;
-      color: #0f172a;
-      text-align: center;
-      margin-bottom: 6px;
-    }
-    .login-modal-sub {
-      font-size: 13px;
-      color: #64748b;
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    .btn-google-action {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      background: #ffffff;
-      color: #374151;
-      border: 1px solid #d1d5db;
-      padding: 10px 16px;
-      border-radius: 10px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-    }
-    .btn-google-action:hover {
-      background: #f9fafb;
-      border-color: #9ca3af;
-    }
-    .auth-or-line {
-      display: flex;
-      align-items: center;
-      margin: 18px 0;
-      color: #94a3b8;
-      font-size: 12px;
-      text-transform: uppercase;
-      font-weight: 600;
-    }
-    .auth-or-line::before, .auth-or-line::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: #e2e8f0;
-    }
-    .auth-or-line span {
-      padding: 0 10px;
-    }
-    .auth-mode-tabs {
-      display: flex;
-      background: #f1f5f9;
-      border-radius: 10px;
-      padding: 4px;
-      margin-bottom: 16px;
-    }
-    .auth-mode-tab {
-      flex: 1;
-      padding: 8px 0;
-      border: none;
-      background: none;
-      font-size: 13px;
-      font-weight: 600;
-      color: #64748b;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .auth-mode-tab.active {
-      background: #ffffff;
-      color: #0f172a;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-    }
-    .auth-input-group {
-      margin-bottom: 14px;
-    }
-    .auth-input-group label {
-      display: block;
-      font-size: 13px;
-      font-weight: 600;
-      color: #475569;
-      margin-bottom: 6px;
-    }
-    .auth-input-group input {
-      width: 100%;
-      padding: 10px 14px;
-      border-radius: 8px;
-      border: 1px solid #cbd5e1;
-      font-size: 14px;
-      outline: none;
-      box-sizing: border-box;
-      transition: border-color 0.2s;
-    }
-    .auth-input-group input:focus {
-      border-color: #2563eb;
-    }
-    .btn-submit-auth {
-      width: 100%;
-      background: #2563eb;
-      color: #ffffff;
-      border: none;
-      padding: 11px;
-      border-radius: 10px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background 0.2s;
-      margin-top: 6px;
-    }
-    .btn-submit-auth:hover {
-      background: #1d4ed8;
-    }
+    /* Auth & Dropdown */
+    .btn-open-login { display: inline-flex; align-items: center; gap: 8px; background: #ffffff; color: #374151; border: 1px solid #d1d5db; padding: 7px 16px; border-radius: 999px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    .btn-open-login:hover { background: #f9fafb; border-color: #9ca3af; }
+    .avatar-dropdown-wrapper { position: relative; }
+    .avatar-trigger-btn { background: none; border: none; padding: 0; cursor: pointer; display: flex; align-items: center; outline: none; }
+    .user-avatar-circle { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #3b82f6; object-fit: cover; box-shadow: 0 2px 6px rgba(0,0,0,0.12); transition: transform 0.15s ease; }
+    .avatar-trigger-btn:hover .user-avatar-circle { transform: scale(1.06); }
+    .user-dropdown-menu { position: absolute; top: 46px; right: 0; width: 230px; background: #ffffff; border-radius: 14px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(0,0,0,0.12); padding: 8px 0; z-index: 500; }
+    .user-menu-header { padding: 8px 16px 10px; }
+    .user-menu-name { display: block; font-size: 14px; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .user-menu-email { display: block; font-size: 12px; color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+    .user-menu-divider { height: 1px; background: #f1f5f9; margin: 4px 0; }
+    .user-menu-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 16px; font-size: 13px; font-weight: 600; color: #334155; background: none; border: none; text-align: left; text-decoration: none; cursor: pointer; }
+    .user-menu-item:hover { background: #f8fafc; color: #0f172a; }
+    .user-menu-item.text-danger { color: #ef4444; }
 
-    /* MODAL LỊCH SỬ HỌC TẬP */
-    .history-modal {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(15, 23, 42, 0.6);
-      backdrop-filter: blur(4px);
-      z-index: 1000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-    }
-    .history-modal-box {
-      background: #ffffff;
-      border-radius: 16px;
-      width: 100%;
-      max-width: 600px;
-      max-height: 85vh;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-    }
-    .history-modal-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 16px 20px;
-      border-bottom: 1px solid #f1f5f9;
-    }
-    .history-modal-head h3 {
-      margin: 0;
-      font-size: 18px;
-      color: #0f172a;
-    }
-    .btn-close-modal {
-      background: none;
-      border: none;
-      font-size: 20px;
-      color: #64748b;
-      cursor: pointer;
-    }
-    .history-tabs {
-      display: flex;
-      border-bottom: 1px solid #e2e8f0;
-      padding: 0 20px;
-      gap: 12px;
-    }
-    .history-tab-btn {
-      background: none;
-      border: none;
-      border-bottom: 2px solid transparent;
-      padding: 12px 6px;
-      font-weight: 600;
-      color: #64748b;
-      font-size: 14px;
-      cursor: pointer;
-    }
-    .history-tab-btn.active {
-      color: #2563eb;
-      border-bottom-color: #2563eb;
-    }
-    .history-list {
-      padding: 16px 20px;
-      overflow-y: auto;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .history-item {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 10px;
-      padding: 12px 14px;
-    }
-    .history-item-head {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 6px;
-    }
-    .history-item-head b {
-      color: #1e293b;
-      font-size: 14px;
-    }
-    .history-item-head small {
-      color: #94a3b8;
-      font-size: 12px;
-    }
-    .history-item-problem {
-      margin: 0 0 8px 0;
-      font-size: 13px;
-      color: #475569;
-      line-height: 1.4;
-    }
-    .history-item-badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: 600;
-    }
-    .history-item-badge.warn {
-      background: #fef3c7;
-      color: #b45309;
-    }
-    .history-item-badge.good {
-      background: #dcfce7;
-      color: #15803d;
-    }
-    .history-practice-score {
-      font-size: 13px;
-      color: #1e293b;
-    }
-    .history-practice-score strong {
-      color: #2563eb;
-    }
-    .history-loading, .history-empty {
-      text-align: center;
-      padding: 30px;
-      color: #94a3b8;
-      font-size: 14px;
-    }
+    .login-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 16px; }
+    .login-modal-box { background: #ffffff; border-radius: 20px; width: 100%; max-width: 400px; padding: 28px 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); position: relative; }
+    .login-modal-title { font-size: 20px; font-weight: 800; color: #0f172a; text-align: center; margin-bottom: 6px; }
+    .login-modal-sub { font-size: 13px; color: #64748b; text-align: center; margin-bottom: 20px; }
+    .btn-google-action { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; background: #ffffff; color: #374151; border: 1px solid #d1d5db; padding: 10px 16px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .auth-or-line { display: flex; align-items: center; margin: 18px 0; color: #94a3b8; font-size: 12px; text-transform: uppercase; font-weight: 600; }
+    .auth-or-line::before, .auth-or-line::after { content: ''; flex: 1; height: 1px; background: #e2e8f0; }
+    .auth-or-line span { padding: 0 10px; }
+    .auth-mode-tabs { display: flex; background: #f1f5f9; border-radius: 10px; padding: 4px; margin-bottom: 16px; }
+    .auth-mode-tab { flex: 1; padding: 8px 0; border: none; background: none; font-size: 13px; font-weight: 600; color: #64748b; border-radius: 8px; cursor: pointer; }
+    .auth-mode-tab.active { background: #ffffff; color: #0f172a; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
+    .auth-input-group { margin-bottom: 14px; }
+    .auth-input-group label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; }
+    .auth-input-group input { width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px; outline: none; box-sizing: border-box; }
+    .btn-submit-auth { width: 100%; background: #2563eb; color: #ffffff; border: none; padding: 11px; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 6px; }
+    .btn-close-modal { background: none; border: none; font-size: 20px; color: #64748b; cursor: pointer; }
+
+    .history-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 16px; }
+    .history-modal-box { background: #ffffff; border-radius: 16px; width: 100%; max-width: 600px; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+    .history-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #f1f5f9; }
+    .history-modal-head h3 { margin: 0; font-size: 18px; color: #0f172a; }
+    .history-tabs { display: flex; border-bottom: 1px solid #e2e8f0; padding: 0 20px; gap: 12px; }
+    .history-tab-btn { background: none; border: none; border-bottom: 2px solid transparent; padding: 12px 6px; font-weight: 600; color: #64748b; font-size: 14px; cursor: pointer; }
+    .history-tab-btn.active { color: #2563eb; border-bottom-color: #2563eb; }
+    .history-list { padding: 16px 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 12px; }
+    .history-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; }
+    .history-item-head { display: flex; justify-content: space-between; margin-bottom: 6px; }
+    .history-item-head b { color: #1e293b; font-size: 14px; }
+    .history-item-head small { color: #94a3b8; font-size: 12px; }
+    .history-item-problem { margin: 0 0 8px 0; font-size: 13px; color: #475569; line-height: 1.4; }
+    .history-item-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+    .history-item-badge.warn { background: #fef3c7; color: #b45309; }
+    .history-item-badge.good { background: #dcfce7; color: #15803d; }
+    .history-practice-score { font-size: 13px; color: #1e293b; }
+    .history-practice-score strong { color: #2563eb; }
+    .history-loading, .history-empty { text-align: center; padding: 30px; color: #94a3b8; font-size: 14px; }
   </style>
 </head>
 <body class="dashboard">
@@ -666,10 +370,7 @@
     <a class="brand" href="index.html"><b>✦</b> MATHFIX <span>AI</span></a>
     
     <div style="display:flex; align-items:center; gap:16px;">
-      <!-- Link "Giới thiệu" (Tự động ẩn đi khi học sinh đã đăng nhập) -->
       <a id="navAboutLink" href="about.html" style="color:#64748b; font-size:13px; font-weight:600; text-decoration:none;">Giới thiệu</a>
-      
-      <!-- KHU VỰC AUTH: NÚT ĐĂNG NHẬP HOẶC AVATAR TRÒN -->
       <div id="authNavArea">
         <button class="btn-open-login" onclick="openLoginModal()" type="button">
           <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.04h3.88c2.27-2.09 3.665-5.17 3.665-9.14z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.04c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.13C3.26 21.43 7.33 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.28c-.25-.72-.38-1.49-.38-2.28s.13-1.56.38-2.28V6.59H1.25C.45 8.24 0 10.07 0 12s.45 3.76 1.25 5.41l4.03-3.13z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.57 1.25 6.59l4.03 3.13c.95-2.83 3.6-4.97 6.72-4.97z"/></svg>
@@ -681,9 +382,9 @@
 
   <main class="wrap learning-page">
     <header class="dash-head">
-      <p class="eyebrow">PHÒNG HỌC CỦA BẠN</p>
+      <p class="eyebrow">CHUYÊN SÂU ĐẠI SỐ THCS LỚP 6, 7, 8, 9 (GDPT 2018)</p>
       <h1>Hôm nay mình học gì nhỉ?</h1>
-      <p>Tải bài làm để AI giúp bạn phát hiện điểm cần ôn nhé.</p>
+      <p>Tải bài làm để AI giúp bạn kiểm tra đề bài, phát hiện lỗi sai và hướng dẫn từng bước nhé.</p>
     </header>
 
     <div class="old-layout">
@@ -691,7 +392,7 @@
         <div class="upload-title">
           <span>🖼️</span>
           <h2>Tải bài làm của bạn lên</h2>
-          <p>Ảnh rõ nét sẽ giúp AI phân tích chính xác hơn</p>
+          <p>Hỗ trợ chuyên sâu Đại số THCS lớp 6, 7, 8, 9 (Chương trình GDPT 2018)</p>
         </div>
 
         <div class="input-tabs">
@@ -739,14 +440,14 @@
         </div>
 
         <div class="practice-plan">
-          <b>📚 Bộ luyện tập tự động</b>
-          <span>4 câu bài tập (1 dễ hơn, 2 cùng mức độ, 1 nâng cao) tạo từ lỗi AI vừa phát hiện.</span>
+          <b>📚 Bộ luyện tập tự luận</b>
+          <span>4 câu bài tập tự luận (1 dễ, 2 cùng mức độ, 1 nâng cao). Học sinh gõ 2-4 bước biến đổi để AI chấm từng bước!</span>
         </div>
 
         <p id="uploadError" class="error-text hidden"></p>
         <button id="analyzeBtn" class="btn" disabled>🔍 Đọc nội dung bài toán</button>
-        <p class="note">AI sẽ đọc chữ trong ảnh để bạn kiểm tra trước khi tiến hành phân tích.</p>
-        <p class="ai-disclaimer" role="note">MathFix có thể đưa ra kết quả chưa hoàn toàn chính xác. Hãy kiểm tra và đối chiếu với đáp án hoặc hướng dẫn của giáo viên.</p>
+        <p class="note">AI sẽ đọc chữ trong ảnh để bạn kiểm tra và có thể tự chỉnh sửa trước khi phân tích.</p>
+        <p class="ai-disclaimer" role="note">MathFix V1 hỗ trợ chuyên sâu Đại số lớp 6, 7, 8, 9 (GDPT 2018). Các phân môn khác hẹn gặp bạn ở bản cập nhật sau.</p>
       </section>
 
       <aside class="tip-panel">
@@ -758,29 +459,41 @@
       </aside>
     </div>
 
-    <!-- MÀN HÌNH KIỂM TRA NỘI DUNG AI ĐÃ ĐỌC -->
+    <!-- MÀN HÌNH KIỂM TRA & TỰ CHỈNH SỬA NỘI DUNG AI ĐÃ ĐỌC -->
     <section id="confirmPanel" class="hidden">
       <div class="confirm-card">
         <div class="confirm-header">
-          <h2>🔍 Kiểm tra nội dung bài toán</h2>
-          <p>Vui lòng đối chiếu xem AI có đọc đúng nội dung bài toán và bài làm của bạn không:</p>
+          <h2>🔍 Kiểm tra & Tự chỉnh sửa nội dung bài toán</h2>
+          <p>Đối chiếu nội dung AI vừa đọc. Bạn có thể <strong>nhập sửa trực tiếp vào ô</strong> nếu AI nhận dạng nhầm chữ cái hay con số:</p>
+        </div>
+
+        <div class="edit-hint">
+          <span>✏️</span> <em>Bạn có thể nhấp chuột vào ô bên dưới để sửa lại đề bài hoặc bài làm nếu có lỗi nhận dạng nhỏ (ví dụ 'x' nhầm thành 'a').</em>
+        </div>
+
+        <div id="outOfScopeAlert" class="out-of-scope-card hidden">
+          <div class="out-of-scope-icon">⚠️</div>
+          <div class="out-of-scope-content">
+            <h3 id="scopeAlertTitle">Nằm ngoài phạm vi hỗ trợ phiên bản hiện tại</h3>
+            <p id="scopeAlertMsg"></p>
+          </div>
         </div>
 
         <div class="confirm-fields">
           <div class="confirm-box">
-            <div class="confirm-box-title">Đề bài AI đọc được:</div>
-            <div id="scannedProblem" class="confirm-box-content"></div>
+            <div class="confirm-box-title">Đề bài (Có thể chỉnh sửa):</div>
+            <textarea id="scannedProblem" class="confirm-textarea" rows="3" placeholder="Nhập hoặc chỉnh sửa đề bài tại đây..."></textarea>
           </div>
           <div class="confirm-box">
-            <div class="confirm-box-title">Nội dung bài làm của bạn:</div>
-            <div id="scannedStudentWork" class="confirm-box-content"></div>
+            <div class="confirm-box-title">Bài làm của bạn (Có thể chỉnh sửa):</div>
+            <textarea id="scannedStudentWork" class="confirm-textarea" rows="6" placeholder="Nhập hoặc chỉnh sửa từng bước làm của bạn tại đây..."></textarea>
           </div>
         </div>
 
         <div class="confirm-actions">
           <button id="btnRetakeCamera" class="btn-secondary" type="button">📸 Chụp lại</button>
-          <button id="btnReupload" class="btn-secondary" type="button">📁 Tải lại ảnh</button>
-          <button id="btnProceedAnalyze" class="btn-primary" type="button">Tiếp tục phân tích →</button>
+          <button id="btnReupload" class="btn-secondary" type="button">📁 Tải ảnh khác</button>
+          <button id="btnProceedAnalyze" class="btn-primary" type="button">Tiến hành phân tích →</button>
         </div>
       </div>
     </section>
@@ -794,6 +507,16 @@
 
     <!-- Khu vực hiển thị kết quả -->
     <section id="resultPanel" class="hidden">
+      <!-- BẢNG THÔNG BÁO NẾU ĐỀ BÀI BỊ SAI -->
+      <div id="problemInvalidBanner" class="problem-invalid-banner hidden">
+        <h3><span>⚠️</span> Phát hiện đề bài có điểm chưa chính xác!</h3>
+        <p id="problemInvalidReason"></p>
+        <div class="problem-suggestion">
+          <strong>Gợi ý chỉnh sửa đề bài cho đúng:</strong>
+          <span id="problemCorrectionText"></span>
+        </div>
+      </div>
+
       <div class="result-layout">
         <div>
           <div class="section-title">
@@ -833,9 +556,7 @@
         Tiếp tục với Google
       </button>
 
-      <div class="auth-or-line">
-        <span>hoặc nhập tài khoản</span>
-      </div>
+      <div class="auth-or-line"><span>hoặc nhập tài khoản</span></div>
 
       <div class="auth-mode-tabs">
         <button id="tabLogin" class="auth-mode-tab active" onclick="setAuthMode('login')">Đăng nhập</button>
@@ -874,13 +595,13 @@
   </div>
 
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <script src="auth.js?v=5"></script>
+  <script src="auth.js?v=6"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
   <script>window.LEARNING_DEMO_MODE = new URLSearchParams(location.search).has('demo');</script>
-  <script src="domain.js?v=6"></script>
-  <script src="mock-analysis-service.js?v=6"></script>
-  <script src="vision-analysis.js?v=6"></script>
-  <script src="learning-path.js?v=6"></script>
+  <script src="domain.js?v=8"></script>
+  <script src="mock-analysis-service.js?v=8"></script>
+  <script src="vision-analysis.js?v=8"></script>
+  <script src="learning-path.js?v=8"></script>
 
   <script>
     document.querySelectorAll('.history-tab-btn').forEach(btn => {
