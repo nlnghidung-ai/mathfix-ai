@@ -142,7 +142,57 @@
 
     .level-tag.easier { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
 
-    /* Ô NHẬP LIỆU CHỈNH SỬA VĂN BẢN QUÉT ĐƯỢC */
+    .theory-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .resource-video-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #fef2f2;
+      border: 1.5px solid #fecaca;
+      color: #b91c1c;
+      padding: 12px 16px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-size: 14px;
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .resource-video-btn:hover {
+      background: #fee2e2;
+      border-color: #ef4444;
+      transform: translateY(-1px);
+    }
+    .resource-video-btn .yt-icon {
+      font-size: 20px;
+      color: #dc2626;
+      flex-shrink: 0;
+    }
+    .resource-video-btn .yt-info b {
+      display: block;
+      font-size: 14px;
+      color: #991b1b;
+    }
+    .resource-video-btn .yt-info small {
+      display: block;
+      font-size: 12px;
+      color: #b91c1c;
+      margin-top: 2px;
+    }
+
+    .drop-zone {
+      cursor: pointer;
+      user-select: none;
+    }
+    .drop-zone.drag-over {
+      border-color: #2563eb !important;
+      background: #eff6ff !important;
+    }
+
     .edit-hint {
       background: #eff6ff;
       border: 1px dashed #60a5fa;
@@ -175,7 +225,18 @@
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
     }
 
-    /* BẢNG CẢNH BÁO ĐỀ BÀI BỊ SAI */
+    .error-card p,
+    .work-compare b,
+    .tip,
+    .model-solution-content,
+    .practice-grade-result,
+    .recheck-feedback,
+    .problem-invalid-banner p,
+    .confirm-box-content {
+      white-space: pre-wrap;
+      line-height: 1.6;
+    }
+
     .problem-invalid-banner {
       background: #fef2f2;
       border: 1.5px solid #f87171;
@@ -192,11 +253,6 @@
       align-items: center;
       gap: 8px;
     }
-    .problem-invalid-banner p {
-      margin: 0 0 8px 0;
-      font-size: 14px;
-      line-height: 1.5;
-    }
     .problem-suggestion {
       background: #fff;
       border: 1px dashed #fca5a5;
@@ -204,9 +260,9 @@
       border-radius: 8px;
       font-size: 14px;
       color: #7f1d1d;
+      white-space: pre-wrap;
     }
 
-    /* KHUNG HƯỚNG DẪN GIẢI MẪU CÓ NÚT BẤM ẨN/HIỆN NỘI DUNG */
     .model-solution-box {
       background: #f0fdf4;
       border: 1.5px solid #86efac;
@@ -249,15 +305,12 @@
     }
     .model-solution-content {
       font-size: 15px;
-      line-height: 1.7;
-      white-space: pre-wrap;
       color: #1e293b;
       margin-top: 14px;
       padding-top: 14px;
       border-top: 1px dashed #86efac;
     }
 
-    /* Ô NHẬP LỜI GIẢI TỰ LUẬN TRONG PHẦN LUYỆN TẬP */
     .practice-solution-box {
       margin-top: 10px;
       display: flex;
@@ -283,14 +336,12 @@
       padding: 12px 14px;
       border-radius: 10px;
       font-size: 14px;
-      line-height: 1.5;
       margin-top: 6px;
     }
     .practice-grade-result.correct { background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46; }
     .practice-grade-result.partial { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; }
     .practice-grade-result.wrong { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
 
-    /* HỘP PHẢN BIỆN "AI SAI RỒI" CÓ TEXTBOX */
     .recheck-box {
       margin-top: 14px;
       padding-top: 12px;
@@ -371,7 +422,6 @@
       padding: 12px 14px;
       border-radius: 8px;
       font-size: 14px;
-      line-height: 1.5;
     }
     .recheck-feedback.ai_wrong { background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46; }
     .recheck-feedback.student_wrong { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
@@ -462,7 +512,7 @@
   <nav class="nav wrap">
     <a class="brand" href="index.html"><b>✦</b> MATHFIX <span>AI</span></a>
     
-    <div style="display:flex; align-items:center; gap:16px;">
+    <div style="display:flex; align-items:center; gap:12px;">
       <a id="navAboutLink" href="about.html" style="color:#64748b; font-size:13px; font-weight:600; text-decoration:none;">Giới thiệu</a>
       <div id="authNavArea">
         <button class="btn-open-login" onclick="openLoginModal()" type="button">
@@ -489,20 +539,20 @@
         </div>
 
         <div class="input-tabs">
-          <button class="tab active" data-tab="upload">Tải ảnh lên</button>
-          <button class="tab" data-tab="camera">Mở camera</button>
+          <button class="tab active" data-tab="upload" type="button">Tải ảnh lên</button>
+          <button class="tab" data-tab="camera" type="button">Mở camera</button>
         </div>
         
         <div id="uploadMode">
-          <label id="emptyDropLabel" class="drop-zone old-drop" for="imageInput">
-            <input id="imageInput" type="file" accept="image/png,image/jpeg" hidden>
+          <div id="emptyDropLabel" class="drop-zone old-drop" style="cursor: pointer;">
+            <input id="imageInput" type="file" accept="image/png,image/jpeg" style="display:none;">
             <div id="emptyDrop">
               <b>🖼️</b>
               <h3>Kéo ảnh bài làm vào đây</h3>
               <p>hoặc <strong>chọn ảnh từ thiết bị</strong></p>
               <small>Hỗ trợ JPG, PNG · Tối đa 10 MB</small>
             </div>
-          </label>
+          </div>
           
           <div id="previewContainer" class="hidden">
             <div class="crop-wrapper">
@@ -610,7 +660,7 @@
         </div>
       </div>
 
-      <!-- HƯỚNG DẪN GIẢI MẪU (MẶC ĐỊNH ẨN NỘI DUNG, BẤM VÀO MỚI MỞ RA) -->
+      <!-- HƯỚNG DẪN GIẢI MẪU -->
       <div id="modelSolutionBox" class="model-solution-box hidden">
         <div class="model-solution-header" id="modelSolutionHeaderToggle">
           <h3><span>💡</span> Hướng dẫn giải chi tiết cho bài toán</h3>
@@ -700,10 +750,10 @@
   <script src="auth.js?v=6"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
   <script>window.LEARNING_DEMO_MODE = new URLSearchParams(location.search).has('demo');</script>
-  <script src="domain.js?v=11"></script>
-  <script src="mock-analysis-service.js?v=11"></script>
-  <script src="vision-analysis.js?v=11"></script>
-  <script src="learning-path.js?v=11"></script>
+  <script src="domain.js?v=18"></script>
+  <script src="mock-analysis-service.js?v=18"></script>
+  <script src="vision-analysis.js?v=18"></script>
+  <script src="learning-path.js?v=18"></script>
 
   <script>
     document.querySelectorAll('.history-tab-btn').forEach(btn => {
