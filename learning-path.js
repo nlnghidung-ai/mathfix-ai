@@ -13,7 +13,7 @@ function toPlainText(str) {
       .replace(/\\le(?:q)?\b/g, ' ≤ ')
       .replace(/\\ge(?:q)?\b/g, ' ≥ ')
       .replace(/\\approx\b/g, ' ≈ ')
-      .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1/$2)')
+      .replace(/\\(?:frac|dfrac|tfrac)\{([^}]+)\}\{([^}]+)\}/g, '($1/$2)')
       .replace(/\\sqrt\[(\d+)\]\{([^}]+)\}/g, 'căn bậc $1($2)')
       .replace(/\\sqrt\{([^}]+)\}/g, 'căn($1)')
       .replace(/\\times/g, '*')
@@ -22,29 +22,46 @@ function toPlainText(str) {
       .replace(/\\cdot/g, '*')
       .replace(/\^\{([^}]+)\}/g, '^$1')
       .replace(/_\{([^}]+)\}/g, '_$1')
+      .replace(/\\text\{([^}]+)\}/g, '$1')
       .replace(/\\/g, '');
   });
 
   s = s.replace(/\\(?:neq|ne)\b/g, ' ≠ ')
+       .replace(/\\(?:frac|dfrac|tfrac)\{([^}]+)\}\{([^}]+)\}/g, '($1/$2)')
+       .replace(/\\sqrt\{([^}]+)\}/g, 'căn($1)')
+       .replace(/\\text\{([^}]+)\}/g, '$1')
        .replace(/\\n/g, '\n');
   return s.trim();
 }
 
-// HÀM LÀM SẠCH VÀ BẢO ĐẢM KHOẢNG CÁCH CHỮ TIẾNG VIỆT (GỠ CHỮ TIẾNG VIỆT KHỎI DẤU $)
+// BỘ CHUẨN HÓA VĂN BẢN VÀ CÔNG THỨC TOÁN HỌC (ĐỒNG BỘ 100% TOÀN BỘ KẾT QUẢ)
 function cleanBreakLines(rawStr) {
   if (!rawStr) return '';
   let str = String(rawStr);
 
-  // 1. GỠ BỎ HOÀN TOÀN DẤU $ NẾU BÊN TRONG CÓ CHỮ TIẾNG VIỆT CÓ DẤU HOẶC TỪ NGỮ (Chống lỗi dính chữ)
-  str = str.replace(/\$([^\$]*[àáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđ][^\$]*)\$/gi, '$1');
-  
-  // Gỡ bỏ dấu $ nếu bên trong chứa các từ thông dụng tiếng Việt
-  str = str.replace(/\$([^\$]*(?:không|xác|định|tại|mẫu|bằng|nên|thay|vào|được|thức|rút|gọn|bước|kết|luận)[^\$]*)\$/gi, '$1');
+  // 1. TỰ ĐỘNG CHUYỂN ĐỔI \ne VÀ \neq THÀNH KÝ HIỆU ≠ (CHỐNG LỖI x e1 TUYỆT ĐỐI)
+  str = str.replace(/(^|[^\$\\])\\(?:ne|neq)\b/g, '$1 ≠ ');
 
-  // 2. Chuyển đổi an toàn ký hiệu khác nếu nằm ngoài dấu $
-  str = str.replace(/(^|[^\$])\\(?:neq|ne)\b/g, '$1 ≠ ');
+  // 2. TỰ ĐỘNG GỠ CHỮ TIẾNG VIỆT KHỎI DẤU $...$ (CHỐNG LỖI MẤT KHOẢNG CÁCH CHỮ)
+  // Nếu bên trong $...$ có từ tiếng Việt (ví dụ: $3 - x thành x - 3$ hoặc $không xác định$), tự động giải phóng chữ ra ngoài
+  str = str.replace(/\$([^\$]+)\$/g, (fullMatch, content) => {
+    const hasVietnamese = /[àáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđ]/i.test(content);
+    const hasWord = /\b(?:không|xác|định|tại|mẫu|thành|bằng|nên|thay|vào|được|thức|rút|gọn|bước|kết|luận|khi|đổi|dấu|phải|thêm|âm|dương)\b/i.test(content);
+    if (hasVietnamese || hasWord) {
+      // Bỏ cặp dấu $ bao ngoài cả câu, chỉ giữ dấu $ cho các công thức con bên trong
+      let unwrap = content;
+      unwrap = unwrap.replace(/(\\(?:dfrac|frac|sqrt|times)\{[^{}]+\}(?:\{[^{}]+\})?)/g, '$$$1$$');
+      return unwrap;
+    }
+    return fullMatch;
+  });
 
-  // 3. Tách chuỗi thành công thức và văn bản để xuống dòng an toàn
+  // 3. TỰ ĐỘNG BỌC DẤU $ CHO CÁC LỆNH LATEX ĐỨNG TRƠ TRỌI (\dfrac, \frac, \sqrt, \text)
+  // Giúp KaTeX nhận diện và vẽ thành công thức thay vì in mã thô ra màn hình
+  str = str.replace(/(^|[^\$])(\\(?:dfrac|frac)\{[^{}]+\}\{[^{}]+\})/g, '$1$$$2$$');
+  str = str.replace(/(^|[^\$])(\\sqrt(?:\[\d+\])?\{[^{}]+\})/g, '$1$$$2$$');
+
+  // 4. XỬ LÝ XUỐNG DÒNG AN TOÀN CHO CÁC PHẦN VĂN BẢN BÊN NGOÀI
   const parts = str.split(/(\$\$[\s\S]*?\$\$|\$[^\$]*?\$)/g);
   for (let i = 0; i < parts.length; i++) {
     const isMath = parts[i].startsWith('$') && parts[i].endsWith('$');
@@ -81,12 +98,21 @@ function renderMath(target){
   setTimeout(run, 400);
 }
 
-// HÀM CHUYỂN NHANH VỀ MÀN HÌNH CHỤP / TẢI ẢNH MỚI (DÀNH CHO NÚT "PHÂN TÍCH BÀI" TRÊN THANH TIÊU ĐỀ)
+// HÀM QUẢN LÝ ẨN / HIỆN NÚT "PHÂN TÍCH BÀI" TRÊN THANH TIÊU ĐỀ
+function updateNavAnalyzeBtn(show) {
+  const btn = $('#navNewAnalyzeBtn');
+  if (!btn) return;
+  if (show) btn.classList.remove('hidden');
+  else btn.classList.add('hidden');
+}
+
+// HÀM CHUYỂN NHANH VỀ MÀN HÌNH CHỤP / TẢI ẢNH MỚI
 window.goToUploadScreen = function() {
   $('#resultPanel')?.classList.add('hidden');
   $('#confirmPanel')?.classList.add('hidden');
   $('#loadingPanel')?.classList.add('hidden');
   $('.old-layout')?.classList.remove('hidden');
+  updateNavAnalyzeBtn(false); // Ẩn nút khi đã về màn hình chọn ảnh
 
   if (cropper) { cropper.destroy(); cropper = null; }
   imageUrl = '';
@@ -200,6 +226,7 @@ $('#analyzeBtn').onclick=async()=>{
   $('#loadingPanel').classList.remove('hidden');
   $('#loadingText').textContent = 'Đang đọc nội dung trong ảnh…';
   $('#loadingSubtext').textContent = 'AI đang nhận diện chữ viết và kiểm tra phạm vi môn Toán THCS.';
+  updateNavAnalyzeBtn(false); // Không hiện nút ở màn hình loading/confirm
 
   try {
     const scanRes = await HomeworkAnalysisService.scan(imageUrl);
@@ -237,6 +264,7 @@ $('#analyzeBtn').onclick=async()=>{
 $('#btnRetakeCamera').onclick=async()=>{
   $('#confirmPanel').classList.add('hidden');
   $('.old-layout').classList.remove('hidden');
+  updateNavAnalyzeBtn(false);
   $$('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab==='camera'));
   $('#uploadMode').classList.add('hidden');
   $('#cameraMode').classList.remove('hidden');
@@ -269,6 +297,7 @@ $('#btnReupload').onclick=()=>{
 
   $('#confirmPanel').classList.add('hidden');
   $('.old-layout').classList.remove('hidden');
+  updateNavAnalyzeBtn(false);
 };
 
 // BƯỚC 2C: TIẾN HÀNH PHÂN TÍCH
@@ -288,6 +317,7 @@ $('#btnProceedAnalyze').onclick=async()=>{
   $('#loadingPanel').classList.remove('hidden');
   $('#loadingText').textContent = 'Đang phân tích bài toán…';
   $('#loadingSubtext').textContent = 'AI đang kiểm tra tính đúng sai của đề bài và các bước giải.';
+  updateNavAnalyzeBtn(false);
 
   try {
     const result = await HomeworkAnalysisService.analyze(imageUrl, currentTranscribed);
@@ -340,6 +370,9 @@ function showResult(result){
   $('#resultPanel').classList.remove('hidden');
   $('#resultImage').src=imageUrl;
 
+  // CHỈ HIỂN THỊ NÚT "PHÂN TÍCH BÀI" KHI ĐÃ VÀO TRANG KẾT QUẢ
+  updateNavAnalyzeBtn(true);
+
   // 1. KIỂM ĐỊNH ĐỀ BÀI
   const invalidBanner = $('#problemInvalidBanner');
   if (result.isProblemValid === false) {
@@ -351,7 +384,7 @@ function showResult(result){
     invalidBanner.classList.add('hidden');
   }
 
-  // 2. HƯỚNG DẪN GIẢI MẪU
+  // 2. HƯỚNG DẪN GIẢI MẪU: ẨN MẶC ĐỊNH
   const modelBox = $('#modelSolutionBox');
   const modelContent = $('#modelSolutionContent');
   const toggleBtn = $('#toggleSolutionBtn');
@@ -396,7 +429,7 @@ function showAnalysis(index){
   $('#problemNavigator').innerHTML=sets.length>1?`<div class="problem-nav"><span class="problem-nav-label">Ảnh có ${sets.length} bài cần xem lại. Chọn một bài:</span>${sets.map((item,itemIndex)=>`<button class="problem-tab ${itemIndex===index?'active':''}" data-analysis="${itemIndex}">${item.title||`Bài ${itemIndex+1}`}</button>`).join('')}</div>`:'';
   $$('.problem-tab').forEach(button=>button.onclick=()=>showAnalysis(Number(button.dataset.analysis)));
   
-  // HIỂN THỊ CÁC THẺ LỖI SAI (ĐÃ LÀM SẠCH KÝ HIỆU VÀ CÔNG THỨC TOÁN)
+  // HIỂN THỊ CÁC THẺ LỖI SAI (ĐỒNG BỘ NGUYÊN TẮC VẼ TOÁN VÀ NGẮT DÒNG)
   if (r.learningErrors && r.learningErrors.length > 0) {
     $('#errorList').innerHTML=r.learningErrors.map((e, errIdx)=>`
       <article class="error-card" id="error-card-${errIdx}">
