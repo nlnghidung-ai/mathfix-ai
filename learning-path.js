@@ -159,7 +159,7 @@ $('#captureBtn').onclick=()=>{
   $('#cameraMode').classList.add('hidden');
 };
 
-// BƯỚC 1: BẤM NÚT ĐỌC BÀI TOÁN -> ĐỔ VÀO 2 Ô TEXTAREA ĐỂ TỰ CHỈNH SỬA
+// BƯỚC 1: BẤM NÚT ĐỌC BÀI TOÁN
 $('#analyzeBtn').onclick=async()=>{
   if(cropper){
     const canvas = cropper.getCroppedCanvas({ maxWidth: 2048, maxHeight: 2048 });
@@ -177,7 +177,6 @@ $('#analyzeBtn').onclick=async()=>{
     const scanRes = await HomeworkAnalysisService.scan(imageUrl);
     currentTranscribed = scanRes;
     
-    // Gán dữ liệu vào ô textarea dạng gõ phím thông thường
     $('#scannedProblem').value = toPlainText(scanRes.problemText || '');
     $('#scannedStudentWork').value = toPlainText(scanRes.studentWorkText || '');
     
@@ -244,7 +243,7 @@ $('#btnReupload').onclick=()=>{
   $('.old-layout').classList.remove('hidden');
 };
 
-// BƯỚC 2C: TIẾN HÀNH PHÂN TÍCH (LẤY VĂN BẢN TRONG 2 Ô TEXTAREA)
+// BƯỚC 2C: TIẾN HÀNH PHÂN TÍCH
 $('#btnProceedAnalyze').onclick=async()=>{
   if ($('#btnProceedAnalyze').disabled) return;
 
@@ -266,7 +265,6 @@ $('#btnProceedAnalyze').onclick=async()=>{
     const result = await HomeworkAnalysisService.analyze(imageUrl, currentTranscribed);
     $('#loadingPanel').classList.add('hidden');
     showResult(result);
-    // BẮT ĐẦU TẢI NGẦM 4 BÀI TẬP
     loadPracticeInBackground(result);
 
     if (window.MathFixAuth?.saveAnalysis) {
@@ -279,7 +277,7 @@ $('#btnProceedAnalyze').onclick=async()=>{
   }
 };
 
-// BƯỚC 3: TẢI NGẦM 4 BÀI TẬP VÀ ĐỔ VÀO GIAO DIỆN
+// BƯỚC 3: TẢI NGẦM 4 BÀI TẬP
 async function loadPracticeInBackground(result){
   const defaultLevels = ['Dễ hơn', 'Tương đương', 'Tương đương', 'Nâng cao'];
   for(let item of result.analysisSets){
@@ -296,7 +294,6 @@ async function loadPracticeInBackground(result){
         solution: ex.solution || ''
       }));
 
-      // Khi tải xong, cập nhật ngay vào khung hiển thị bài tập
       const container = $('#practiceBox');
       if (container && item.generatedExercises.length) {
         container.innerHTML = practiceMarkup(item.generatedExercises);
@@ -326,13 +323,35 @@ function showResult(result){
     invalidBanner.classList.add('hidden');
   }
 
-  // 2. HƯỚNG DẪN GIẢI MẪU (KHI HỌC SINH ĐỂ TRỐNG BÀI LÀM)
+  // 2. HƯỚNG DẪN GIẢI MẪU: ẨN MẶC ĐỊNH, CHỈ HIỆN KHI BẤM NÚT "XEM LỜI GIẢI"
   const modelBox = $('#modelSolutionBox');
+  const modelContent = $('#modelSolutionContent');
+  const toggleBtn = $('#toggleSolutionBtn');
+  const headerToggle = $('#modelSolutionHeaderToggle');
   const firstAnalysis = result.analysisSets?.[0] || {};
+
   if (firstAnalysis.modelSolution) {
     modelBox.classList.remove('hidden');
-    $('#modelSolutionContent').textContent = firstAnalysis.modelSolution;
-    renderMath(modelBox);
+    modelContent.textContent = firstAnalysis.modelSolution;
+    // Mặc định ẩn nội dung
+    modelContent.classList.add('hidden');
+    toggleBtn.textContent = '👁️ Xem lời giải ▼';
+
+    // Xử lý sự kiện bấm mở/đóng lời giải
+    const handleToggle = () => {
+      const isHidden = modelContent.classList.contains('hidden');
+      if (isHidden) {
+        modelContent.classList.remove('hidden');
+        toggleBtn.textContent = 'Ẩn lời giải ▲';
+        renderMath(modelContent); // Vẽ công thức toán khi mở ra
+      } else {
+        modelContent.classList.add('hidden');
+        toggleBtn.textContent = '👁️ Xem lời giải ▼';
+      }
+    };
+
+    toggleBtn.onclick = (e) => { e.stopPropagation(); handleToggle(); };
+    headerToggle.onclick = handleToggle;
   } else {
     modelBox.classList.add('hidden');
   }
@@ -386,7 +405,7 @@ function showAnalysis(index){
       <article class="error-card" style="border: 2px solid #86efac; background: #f0fdf4;">
         <span class="severity" style="background:#10b981; color:#fff;">✓ Kiến thức chuẩn</span>
         <h3>Phương pháp giải bài toán</h3>
-        <p>Bạn hãy theo dõi các bước giải mẫu bên trên và tự luyện tập 4 bài tương tự bên dưới nhé!</p>
+        <p>Bạn hãy bấm vào nút "Xem lời giải" ở khung phía trên để xem bài giải chi tiết, sau đó tự làm 4 bài luyện tập bên dưới nhé!</p>
       </article>
     `;
   }
@@ -488,7 +507,7 @@ function renderPath(r){
   renderMath($('#pathSteps'));
 }
 
-// BỘ GIAO DIỆN HIỂN THỊ 4 BÀI TẬP VỚI CÂU 1, CÂU 2, CÂU 3, CÂU 4 (KHÔNG BỊ BỘ LỌC LÀM MẤT BÀI)
+// BỘ GIAO DIỆN HIỂN THỊ 4 BÀI TẬP VỚI CÂU 1, CÂU 2, CÂU 3, CÂU 4
 function practiceMarkup(items){
   if (!items || !items.length) {
     return '<div class="ai-created">Chưa có bài luyện tập nào được nạp.</div>';
