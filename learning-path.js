@@ -2,6 +2,31 @@ const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 let imageUrl='',originalImageUrl='',cropper=null,cameraStream=null,currentResult=null,currentAnalysis=null,correctCount=0,practiceAttempts=[];
 let currentTranscribed=null;
 
+// HÀM CHUYỂN ĐỔI SANG VĂN BẢN GÕ PHÍM THÔNG THƯỜNG (DÀNH CHO Ô NHẬP LIỆU CHỈNH SỬA)
+function toPlainText(str) {
+  if (!str) return '';
+  return String(str)
+    // Chuyển phân số LaTeX \frac{a}{b} -> (a/b)
+    .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1/$2)')
+    // Chuyển căn bậc cao \sqrt[n]{x} -> căn bậc n(x)
+    .replace(/\\sqrt\[(\d+)\]\{([^}]+)\}/g, 'căn bậc $1($2)')
+    // Chuyển căn bậc hai \sqrt{x} -> căn(x)
+    .replace(/\\sqrt\{([^}]+)\}/g, 'căn($1)')
+    // Chuyển các phép toán LaTeX sang ký tự bàn phím
+    .replace(/\\times/g, '*')
+    .replace(/\\div/g, ':')
+    .replace(/\\pm/g, '±')
+    .replace(/\\cdot/g, '*')
+    // Bỏ ngoặc nhọn ở số mũ và chỉ số dưới: x^{12} -> x^12
+    .replace(/\^\{([^}]+)\}/g, '^$1')
+    .replace(/_\{([^}]+)\}/g, '_$1')
+    // Xóa sạch toàn bộ dấu $ và gạch chéo ngược thừa
+    .replace(/\$/g, '')
+    .replace(/\\/g, '')
+    .trim();
+}
+
+// BỘ VẼ CÔNG THỨC TOÁN HỌC (CHỈ DÙNG Ở MÀN HÌNH HIỂN THỊ KẾT QUẢ VÀ BÀI TẬP)
 function renderMath(target){
   const el = target || document.body;
   const run = () => {
@@ -11,7 +36,8 @@ function renderMath(target){
         const textNodes = [];
         while (walker.nextNode()) {
           const parent = walker.currentNode.parentNode;
-          if (parent && !['SCRIPT', 'STYLE', 'TEXTAREA', 'PRE', 'CODE'].includes(parent.tagName) && !parent.closest('.katex')) {
+          // Không đụng vào các ô nhập liệu textarea hoặc input
+          if (parent && !['SCRIPT', 'STYLE', 'TEXTAREA', 'INPUT', 'PRE', 'CODE'].includes(parent.tagName) && !parent.closest('.katex')) {
             const val = walker.currentNode.nodeValue;
             if (val && (/\$([^$]+)\$/.test(val) || /\\(frac|sqrt|times|div|pm)/.test(val) || /\b[a-zA-Z0-9]\^\{?[0-9a-zA-Z+-]+\}?/.test(val))) {
               textNodes.push(walker.currentNode);
@@ -140,7 +166,7 @@ $('#captureBtn').onclick=()=>{
   $('#cameraMode').classList.add('hidden');
 };
 
-// BƯỚC 1: BẤM NÚT ĐỌC NỘI DUNG BÀI TOÁN & ĐƯA VÀO Ô ĐỂ HỌC SINH TỰ CHỈNH SỬA
+// BƯỚC 1: BẤM NÚT ĐỌC BÀI TOÁN -> HIỂN THỊ DẠNG GÕ PHÍM THÔNG THƯỜNG TRONG 2 Ô TEXTAREA
 $('#analyzeBtn').onclick=async()=>{
   if(cropper){
     const canvas = cropper.getCroppedCanvas({ maxWidth: 2048, maxHeight: 2048 });
@@ -158,9 +184,9 @@ $('#analyzeBtn').onclick=async()=>{
     const scanRes = await HomeworkAnalysisService.scan(imageUrl);
     currentTranscribed = scanRes;
     
-    // Gán nội dung vào ô TEXTAREA để học sinh có thể trực tiếp sửa lại nếu muốn
-    $('#scannedProblem').value = scanRes.problemText || '';
-    $('#scannedStudentWork').value = scanRes.studentWorkText || '';
+    // ĐỔ VĂN BẢN ĐÃ LÀM SẠCH VÀO 2 Ô TEXTAREA (Hoàn toàn bằng ký tự gõ phím bình thường)
+    $('#scannedProblem').value = toPlainText(scanRes.problemText || '');
+    $('#scannedStudentWork').value = toPlainText(scanRes.studentWorkText || '');
     
     const scopeAlert = $('#outOfScopeAlert');
     const proceedBtn = $('#btnProceedAnalyze');
@@ -225,11 +251,10 @@ $('#btnReupload').onclick=()=>{
   $('.old-layout').classList.remove('hidden');
 };
 
-// BƯỚC 2C: TIẾN HÀNH PHÂN TÍCH (LẤY CHÍNH XÁC NỘI DUNG MÀ HỌC SINH ĐÃ CHỈNH SỬA)
+// BƯỚC 2C: TIẾN HÀNH PHÂN TÍCH (LẤY VĂN BẢN HỌC SINH ĐÃ CHỈNH SỬA TRONG TEXTAREA)
 $('#btnProceedAnalyze').onclick=async()=>{
   if ($('#btnProceedAnalyze').disabled) return;
 
-  // Thu thập nội dung thực tế từ 2 ô textarea (học sinh có thể đã sửa lỗi nhận dạng)
   const editedProblem = $('#scannedProblem').value.trim();
   const editedStudentWork = $('#scannedStudentWork').value.trim();
 
@@ -288,7 +313,7 @@ function showResult(result){
   $('#resultPanel').classList.remove('hidden');
   $('#resultImage').src=imageUrl;
 
-  // KIỂM TRA TÍNH ĐÚNG/SAI CỦA ĐỀ BÀI: Nếu đề bài sai thì hiện bảng cảnh báo màu đỏ
+  // BẢNG CẢNH BÁO ĐỀ BÀI BỊ SAI
   const invalidBanner = $('#problemInvalidBanner');
   if (result.isProblemValid === false) {
     invalidBanner.classList.remove('hidden');
@@ -475,7 +500,6 @@ function bindPracticeEvents(){
 
         if (isOk) correctCount++;
 
-        // Nếu đã hoàn thành cả 4 câu thì cho phép bấm nút Hoàn thành bài luyện
         if ($$('.practice-question[data-done="yes"]').length === currentAnalysis.generatedExercises.length) {
           $('#finishPractice').disabled = false;
         }
