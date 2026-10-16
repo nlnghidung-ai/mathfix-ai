@@ -5,142 +5,75 @@ let currentTranscribed=null;
 // HÀM CHUYỂN ĐỔI SANG VĂN BẢN GÕ PHÍM THÔNG THƯỜNG (DÀNH CHO Ô NHẬP LIỆU CHỈNH SỬA)
 function toPlainText(str) {
   if (!str) return '';
-  let s = String(str);
-
-  s = s.replace(/\$([^\$]+)\$/g, (_, math) => {
-    return math
-      .replace(/\\(?:neq|ne)\b/g, ' ≠ ')
-      .replace(/\\le(?:q)?\b/g, ' ≤ ')
-      .replace(/\\ge(?:q)?\b/g, ' ≥ ')
-      .replace(/\\approx\b/g, ' ≈ ')
-      .replace(/\\(?:frac|dfrac|tfrac)\{([^}]+)\}\{([^}]+)\}/g, '($1/$2)')
-      .replace(/\\sqrt\[(\d+)\]\{([^}]+)\}/g, 'căn bậc $1($2)')
-      .replace(/\\sqrt\{([^}]+)\}/g, 'căn($1)')
-      .replace(/\\times/g, '*')
-      .replace(/\\div/g, ':')
-      .replace(/\\pm/g, '±')
-      .replace(/\\cdot/g, '*')
-      .replace(/\^\{([^}]+)\}/g, '^$1')
-      .replace(/_\{([^}]+)\}/g, '_$1')
-      .replace(/\\text\{([^}]+)\}/g, '$1')
-      .replace(/\\/g, '');
-  });
-
-  s = s.replace(/\\(?:neq|ne)\b/g, ' ≠ ')
-       .replace(/\\(?:frac|dfrac|tfrac)\{([^}]+)\}\{([^}]+)\}/g, '($1/$2)')
-       .replace(/\\sqrt\{([^}]+)\}/g, 'căn($1)')
-       .replace(/\\text\{([^}]+)\}/g, '$1')
-       .replace(/\\n/g, '\n');
-  return s.trim();
+  return String(str)
+    .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1/$2)')
+    .replace(/\\sqrt\[(\d+)\]\{([^}]+)\}/g, 'căn bậc $1($2)')
+    .replace(/\\sqrt\{([^}]+)\}/g, 'căn($1)')
+    .replace(/\\times/g, '*')
+    .replace(/\\div/g, ':')
+    .replace(/\\pm/g, '±')
+    .replace(/\\cdot/g, '*')
+    .replace(/\^\{([^}]+)\}/g, '^$1')
+    .replace(/_\{([^}]+)\}/g, '_$1')
+    .replace(/\$/g, '')
+    .replace(/\\/g, '')
+    .trim();
 }
 
-// BỘ CHUYỂN ĐỔI TOÁN HỌC TRỰC TIẾP SANG KATEX HTML (MỘT CHIỀU DUY NHẤT, KHÔNG LỖI ĐÈ $$)
-function formatMathHTML(rawStr) {
-  if (!rawStr) return '';
-  let str = String(rawStr);
-
-  // 1. Chuyển \n thô thành ký tự xuống dòng thực tế
-  str = str.replace(/\\n/g, '\n');
-
-  // 2. Chuyển \ne hoặc \neq đứng ngoài thành ký hiệu ≠
-  str = str.replace(/(^|[^\$\\])\\(?:ne|neq)\b/g, '$1 ≠ ');
-
-  // 3. Nếu KaTeX chưa tải xong, trả về văn bản sạch
-  if (typeof window.katex === 'undefined') {
-    return str;
-  }
-
-  // 4. Render các khối $$...$$ (công thức khối)
-  str = str.replace(/\$\$([\s\S]+?)\$\$/g, (_, tex) => {
-    try {
-      return window.katex.renderToString(tex.trim(), { displayMode: true, throwOnError: false });
-    } catch {
-      return tex;
-    }
-  });
-
-  // 5. Render các khối $...$ (công thức nội dòng)
-  str = str.replace(/\$([^\$\n]+?)\$/g, (fullMatch, tex) => {
-    const trimmed = tex.trim();
-    // Nếu bị AI bọc nhầm cả câu tiếng Việt (chứa chữ có dấu), nhả chữ tiếng Việt ra để không bị dính chữ
-    if (/[àáảãạăắằẳẵặâấầẩẫậèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵđ]/i.test(trimmed)) {
-      return trimmed;
-    }
-    try {
-      return window.katex.renderToString(trimmed, { displayMode: false, throwOnError: false });
-    } catch {
-      return fullMatch;
-    }
-  });
-
-  // 6. Xử lý các lệnh \dfrac, \frac, \sqrt mà AI quên gõ dấu $ bao quanh (dịch thẳng sang KaTeX HTML)
-  str = str.replace(/(\\(?:dfrac|frac)\{[^{}]+\}\{[^{}]+\})/g, (_, tex) => {
-    try {
-      return window.katex.renderToString(tex.trim(), { displayMode: false, throwOnError: false });
-    } catch {
-      return tex;
-    }
-  });
-
-  str = str.replace(/(\\sqrt(?:\[\d+\])?\{[^{}]+\})/g, (_, tex) => {
-    try {
-      return window.katex.renderToString(tex.trim(), { displayMode: false, throwOnError: false });
-    } catch {
-      return tex;
-    }
-  });
-
-  // 7. Xử lý số mũ đơn giản đứng ngoài như BC^2, AB^2, 10^2, 6^2
-  str = str.replace(/\b([a-zA-Z0-9]+)\^([0-9]+)\b/g, '$1<sup>$2</sup>');
-
-  return str;
-}
-
-// BỘ VẼ DỰ PHÒNG CHO NỘI DUNG ĐỘNG
+// BỘ VẼ CÔNG THỨC TOÁN HỌC CHUẨN XÁC (KHÔNG BỊ LỆCH MẪU SỐ)
 function renderMath(target){
   const el = target || document.body;
-  if (typeof window.renderMathInElement === 'function') {
-    try {
-      window.renderMathInElement(el, {
-        delimiters: [
-          { left: '$$', right: '$$', display: true },
-          { left: '$', right: '$', display: false }
-        ],
-        ignoredTags: ['script', 'style', 'textarea', 'input', 'pre', 'code'],
-        throwOnError: false
-      });
-    } catch (e) {
-      console.warn('renderMath error:', e);
+  const run = () => {
+    if (typeof window.katex !== 'undefined') {
+      try {
+        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+        const textNodes = [];
+        while (walker.nextNode()) {
+          const parent = walker.currentNode.parentNode;
+          if (parent && !['SCRIPT', 'STYLE', 'TEXTAREA', 'INPUT', 'PRE', 'CODE'].includes(parent.tagName) && !parent.closest('.katex')) {
+            const val = walker.currentNode.nodeValue;
+            if (val && (/\$([^$]+)\$/.test(val) || /\\(frac|dfrac|tfrac|sqrt|times|div|pm)/.test(val) || /\b[a-zA-Z0-9]\^\{?[0-9a-zA-Z+-]+\}?/.test(val))) {
+              textNodes.push(walker.currentNode);
+            }
+          }
+        }
+
+        textNodes.forEach(node => {
+          let text = node.nodeValue;
+          if (!text) return;
+
+          // Chỉ bọc $ nếu phân số hoặc căn chưa nằm trong $...$
+          text = text.replace(/(^|[^\$])(\\(?:frac|dfrac|tfrac)\{[^{}]+\}\{[^{}]+\})/g, '$1$$$2$$');
+          text = text.replace(/(^|[^\$])(\\sqrt(?:\[\d+\])?\{[^{}]+\})/g, '$1$$$2$$');
+
+          // Render $$...$$ trước (dạng hiển thị khối)
+          let html = text.replace(/\$\$([^$]+)\$\$/g, (_, math) => {
+            try { return window.katex.renderToString(math.trim(), { displayMode: true, throwOnError: false }); }
+            catch { return `$$${math}$$`; }
+          });
+
+          // Render $...$ sau (dạng hiển thị nội dòng)
+          html = html.replace(/\$([^$]+)\$/g, (_, math) => {
+            try { return window.katex.renderToString(math.trim(), { displayMode: false, throwOnError: false }); }
+            catch { return `$${math}$`; }
+          });
+
+          if (html !== node.nodeValue) {
+            const span = document.createElement('span');
+            span.innerHTML = html;
+            node.parentNode?.replaceChild(span, node);
+          }
+        });
+      } catch (err) {
+        console.warn('Lỗi renderMath:', err);
+      }
     }
-  }
+  };
+
+  run();
+  setTimeout(run, 150);
+  setTimeout(run, 400);
 }
-
-// HÀM QUẢN LÝ ẨN / HIỆN NÚT "PHÂN TÍCH BÀI" TRÊN THANH TIÊU ĐỀ
-function updateNavAnalyzeBtn(show) {
-  const btn = $('#navNewAnalyzeBtn');
-  if (!btn) return;
-  if (show) btn.classList.remove('hidden');
-  else btn.classList.add('hidden');
-}
-
-// HÀM CHUYỂN NHANH VỀ MÀN HÌNH CHỤP / TẢI ẢNH MỚI
-window.goToUploadScreen = function() {
-  $('#resultPanel')?.classList.add('hidden');
-  $('#confirmPanel')?.classList.add('hidden');
-  $('#loadingPanel')?.classList.add('hidden');
-  $('.old-layout')?.classList.remove('hidden');
-  updateNavAnalyzeBtn(false);
-
-  if (cropper) { cropper.destroy(); cropper = null; }
-  imageUrl = '';
-  originalImageUrl = '';
-  if ($('#imageInput')) $('#imageInput').value = '';
-  $('#previewContainer')?.classList.add('hidden');
-  $('#emptyDropLabel')?.classList.remove('hidden');
-  if ($('#analyzeBtn')) $('#analyzeBtn').disabled = true;
-
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-};
 
 function initCropper(src){
   if(cropper){ cropper.destroy(); cropper = null; }
@@ -243,7 +176,6 @@ $('#analyzeBtn').onclick=async()=>{
   $('#loadingPanel').classList.remove('hidden');
   $('#loadingText').textContent = 'Đang đọc nội dung trong ảnh…';
   $('#loadingSubtext').textContent = 'AI đang nhận diện chữ viết và kiểm tra phạm vi môn Toán THCS.';
-  updateNavAnalyzeBtn(false);
 
   try {
     const scanRes = await HomeworkAnalysisService.scan(imageUrl);
@@ -281,7 +213,6 @@ $('#analyzeBtn').onclick=async()=>{
 $('#btnRetakeCamera').onclick=async()=>{
   $('#confirmPanel').classList.add('hidden');
   $('.old-layout').classList.remove('hidden');
-  updateNavAnalyzeBtn(false);
   $$('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab==='camera'));
   $('#uploadMode').classList.add('hidden');
   $('#cameraMode').classList.remove('hidden');
@@ -314,7 +245,6 @@ $('#btnReupload').onclick=()=>{
 
   $('#confirmPanel').classList.add('hidden');
   $('.old-layout').classList.remove('hidden');
-  updateNavAnalyzeBtn(false);
 };
 
 // BƯỚC 2C: TIẾN HÀNH PHÂN TÍCH
@@ -334,7 +264,6 @@ $('#btnProceedAnalyze').onclick=async()=>{
   $('#loadingPanel').classList.remove('hidden');
   $('#loadingText').textContent = 'Đang phân tích bài toán…';
   $('#loadingSubtext').textContent = 'AI đang kiểm tra tính đúng sai của đề bài và các bước giải.';
-  updateNavAnalyzeBtn(false);
 
   try {
     const result = await HomeworkAnalysisService.analyze(imageUrl, currentTranscribed);
@@ -373,6 +302,7 @@ async function loadPracticeInBackground(result){
       if (container && item.generatedExercises.length) {
         container.innerHTML = practiceMarkup(item.generatedExercises);
         bindPracticeEvents();
+        renderMath(container);
       }
     } catch (err) {
       console.warn('Lỗi nạp bài luyện tập:', err);
@@ -386,20 +316,18 @@ function showResult(result){
   $('#resultPanel').classList.remove('hidden');
   $('#resultImage').src=imageUrl;
 
-  // HIỂN THỊ NÚT "PHÂN TÍCH BÀI" KHI ĐÃ VÀO TRANG KẾT QUẢ
-  updateNavAnalyzeBtn(true);
-
-  // 1. KIỂM ĐỊNH ĐỀ BÀI (DÙNG FORMATMATHHTML TRỰC TIẾP)
+  // 1. KIỂM ĐỊNH ĐỀ BÀI
   const invalidBanner = $('#problemInvalidBanner');
   if (result.isProblemValid === false) {
     invalidBanner.classList.remove('hidden');
-    $('#problemInvalidReason').innerHTML = formatMathHTML(result.problemIssue || 'Đề bài toán có dấu hiệu mâu thuẫn hoặc chưa chuẩn xác.');
-    $('#problemCorrectionText').innerHTML = formatMathHTML(result.problemCorrectionSuggestion || 'Vui lòng kiểm tra lại số liệu của đề bài.');
+    $('#problemInvalidReason').textContent = result.problemIssue || 'Đề bài toán có dấu hiệu mâu thuẫn hoặc chưa chuẩn xác dẫn tới bài giải không hợp lệ.';
+    $('#problemCorrectionText').textContent = result.problemCorrectionSuggestion || 'Vui lòng kiểm tra lại số liệu của đề bài.';
+    renderMath(invalidBanner);
   } else {
     invalidBanner.classList.add('hidden');
   }
 
-  // 2. HƯỚNG DẪN GIẢI MẪU
+  // 2. HƯỚNG DẪN GIẢI MẪU: ẨN MẶC ĐỊNH, CHỈ HIỆN KHI BẤM NÚT
   const modelBox = $('#modelSolutionBox');
   const modelContent = $('#modelSolutionContent');
   const toggleBtn = $('#toggleSolutionBtn');
@@ -408,7 +336,7 @@ function showResult(result){
 
   if (firstAnalysis.modelSolution) {
     modelBox.classList.remove('hidden');
-    modelContent.innerHTML = formatMathHTML(firstAnalysis.modelSolution);
+    modelContent.textContent = firstAnalysis.modelSolution;
     modelContent.classList.add('hidden');
     toggleBtn.textContent = '👁️ Xem lời giải ▼';
 
@@ -417,6 +345,7 @@ function showResult(result){
       if (isHidden) {
         modelContent.classList.remove('hidden');
         toggleBtn.textContent = 'Ẩn lời giải ▲';
+        renderMath(modelContent);
       } else {
         modelContent.classList.add('hidden');
         toggleBtn.textContent = '👁️ Xem lời giải ▼';
@@ -437,25 +366,24 @@ function showAnalysis(index){
   correctCount=0;
   practiceAttempts=[];
   const r=currentAnalysis;
-  $('#topicLabel').innerHTML = formatMathHTML(`${r.subject.name} · ${r.knowledgePoint.name}`);
-  $('#recommendation').innerHTML = formatMathHTML(r.aiRecommendation.message);
-  
+  $('#topicLabel').textContent=`${r.subject.name} · ${r.knowledgePoint.name}`;
+  $('#recommendation').textContent=r.aiRecommendation.message;
   const sets=currentResult.analysisSets;
   $('#problemNavigator').innerHTML=sets.length>1?`<div class="problem-nav"><span class="problem-nav-label">Ảnh có ${sets.length} bài cần xem lại. Chọn một bài:</span>${sets.map((item,itemIndex)=>`<button class="problem-tab ${itemIndex===index?'active':''}" data-analysis="${itemIndex}">${item.title||`Bài ${itemIndex+1}`}</button>`).join('')}</div>`:'';
   $$('.problem-tab').forEach(button=>button.onclick=()=>showAnalysis(Number(button.dataset.analysis)));
   
-  // HIỂN THỊ CÁC THẺ LỖI SAI (ÁP DỤNG FORMATMATHHTML CHO TOÀN BỘ CÁC VỊ TRÍ)
+  // HIỂN THỊ CÁC THẺ LỖI SAI KÈM NÚT PHẢN BIỆN
   if (r.learningErrors && r.learningErrors.length > 0) {
     $('#errorList').innerHTML=r.learningErrors.map((e, errIdx)=>`
       <article class="error-card" id="error-card-${errIdx}">
         <span class="severity">Cần ôn lại</span>
-        <h3>${formatMathHTML(e.title)}</h3>
+        <h3>${e.title}</h3>
         <div class="work-compare">
-          <div><small>BẠN ĐÃ LÀM</small><b>${formatMathHTML(e.studentWork)}</b></div>
-          <div><small>CÁCH BIẾN ĐỔI CHUẨN</small><b>${formatMathHTML(e.correction)}</b></div>
+          <div><small>BẠN ĐÃ LÀM</small><b>${e.studentWork}</b></div>
+          <div><small>CÁCH BIẾN ĐỔI CHUẨN</small><b>${e.correction}</b></div>
         </div>
-        <p><b>Vị trí:</b> ${e.position}. ${formatMathHTML(e.explanation)}</p>
-        <div class="tip">💡 ${formatMathHTML(e.tip)}</div>
+        <p><b>Vị trí:</b> ${e.position}. ${e.explanation}</p>
+        <div class="tip">💡 ${e.tip}</div>
         
         <div class="recheck-box" id="recheck-box-${errIdx}">
           <button class="btn-recheck-step" data-index="${errIdx}" type="button">🤔 Phản biện (AI chỉ sai rồi)</button>
@@ -485,8 +413,10 @@ function showAnalysis(index){
   }
   
   renderPath(r);
+  renderMath($('#resultPanel'));
 }
 
+// BƯỚC XỬ LÝ SỰ KIỆN PHẢN BIỆN 2 CHIỀU
 function bindRecheckEvents(){
   $$('.btn-recheck-step').forEach(btn => {
     btn.onclick = () => {
@@ -535,14 +465,16 @@ function bindRecheckEvents(){
           card.classList.add('acknowledged-correct');
           card.querySelector('.severity').textContent = '✓ Bạn làm đúng';
           feedback.className = 'recheck-feedback ai_wrong';
-          feedback.innerHTML = `<strong>🎉 ${res.verdictTitle}:</strong> ${formatMathHTML(res.explanation)}`;
+          feedback.innerHTML = `<strong>🎉 ${res.verdictTitle}:</strong> ${res.explanation}`;
         } else if (res.verdictType === 'both_flawed') {
           feedback.className = 'recheck-feedback both_flawed';
-          feedback.innerHTML = `<strong>💡 ${res.verdictTitle}:</strong> ${formatMathHTML(res.explanation)}`;
+          feedback.innerHTML = `<strong>💡 ${res.verdictTitle}:</strong> ${res.explanation}`;
         } else {
           feedback.className = 'recheck-feedback student_wrong';
-          feedback.innerHTML = `<strong>⚠️ ${res.verdictTitle}:</strong> ${formatMathHTML(res.explanation)}`;
+          feedback.innerHTML = `<strong>⚠️ ${res.verdictTitle}:</strong> ${res.explanation}`;
         }
+
+        renderMath(feedback);
       } catch (err) {
         btn.disabled = false;
         btn.textContent = 'Gửi phản biện cho AI';
@@ -553,25 +485,11 @@ function bindRecheckEvents(){
 }
 
 function renderPath(r){
-  const topicName = r.knowledgePoint?.name || r.topic || 'Toán THCS';
-  const videoUrl = r.learningResources?.[0]?.url || `https://www.youtube.com/results?search_query=${encodeURIComponent(topicName + ' toán THCS')}`;
-
   $('#pathSteps').innerHTML=r.learningPath.map((s,i)=>`<article class="path-step ${i?'':'active'}" data-step="${s.step}">
     <p class="step-tag">BƯỚC ${s.step}</p>
     <h3>${s.title}</h3>
-    <p>${formatMathHTML(s.goal)}</p>
-    ${i===0?`
-      <div class="theory-actions">
-        <a class="resource-video-btn" target="_blank" rel="noopener" href="${videoUrl}">
-          <span class="yt-icon">▶</span>
-          <div class="yt-info">
-            <b>Xem bài giảng YouTube về chuyên đề này</b>
-            <small>Chủ đề: ${topicName}</small>
-          </div>
-        </a>
-        <button class="btn next-step" type="button">Luyện tập luôn (4 bài) →</button>
-      </div>
-    `:''}
+    <p>${s.goal}</p>
+    ${i===0?`<button class="btn next-step" type="button">Đã học lý thuyết → Bắt đầu luyện tập</button>`:''}
     ${i===1?`<div id="practiceBox">${r.generatedExercises?.length ? practiceMarkup(r.generatedExercises) : '<div class="ai-created">⏳ Đang tạo 4 bài luyện tập thích ứng từ lỗi của bạn...</div>'}</div>`:''}
     ${i===2?`<div id="practiceSummary" class="summary-card">Hoàn thành các bài luyện tự luận để nhận xét kết quả.</div><button class="btn restart" type="button">Tạo phân tích mới</button>`:''}
   </article>`).join('');
@@ -580,14 +498,18 @@ function renderPath(r){
   if (nextBtn) {
     nextBtn.onclick = () => {
       goStep(2);
+      const pBox = $('#practiceBox');
+      if (pBox) renderMath(pBox);
     };
   }
 
   bindPracticeEvents();
   const restartBtn = $('.restart');
   if (restartBtn) restartBtn.onclick = () => location.reload();
+  renderMath($('#pathSteps'));
 }
 
+// BỘ GIAO DIỆN HIỂN THỊ 4 BÀI TẬP VỚI CÂU 1, CÂU 2, CÂU 3, CÂU 4
 function practiceMarkup(items){
   if (!items || !items.length) {
     return '<div class="ai-created">Chưa có bài luyện tập nào được nạp.</div>';
@@ -606,7 +528,7 @@ function practiceMarkup(items){
             <label>
               <span class="level-tag ${cls}">${lvl}</span>
               <strong class="question-number">Câu ${num}:</strong>
-              <span class="question-text">${formatMathHTML(x.question.replace(/^\s*Câu\s*\d+\s*[:.)-]?\s*/i, ''))}</span>
+              <span class="question-text">${x.question.replace(/^\s*Câu\s*\d+\s*[:.)-]?\s*/i, '')}</span>
             </label>
             <div class="practice-solution-box">
               <textarea class="practice-steps-textarea" placeholder="Gõ các bước giải của bạn vào đây (khoảng 2-4 dòng, gõ phím bình thường)..." rows="3"></textarea>
@@ -621,6 +543,7 @@ function practiceMarkup(items){
   `;
 }
 
+// XỬ LÝ CHẤM TỰ LUẬN TỪNG BƯỚC BẰNG AI KHI HỌC SINH NỘP BÀI
 function bindPracticeEvents(){
   $$('.check-answer').forEach(btn => {
     btn.onclick = async (event) => {
@@ -655,8 +578,9 @@ function bindPracticeEvents(){
         resultBox.className = `practice-grade-result ${isOk ? 'correct' : (gradeRes.score >= 5 ? 'partial' : 'wrong')}`;
         resultBox.innerHTML = `
           <div><strong>Điểm: ${gradeRes.score || (isOk ? '10/10' : '0/10')} · ${gradeRes.verdict || ''}</strong></div>
-          <div style="margin-top:4px;">${formatMathHTML(gradeRes.feedback || '')}</div>
+          <div style="margin-top:4px;">${gradeRes.feedback || ''}</div>
         `;
+        renderMath(resultBox);
 
         btn.textContent = isOk ? '✓ Đã hoàn thành' : 'Đã chấm bài';
 
@@ -706,16 +630,17 @@ function renderReview(summary,feedback,total){
     return `
       <article class="review-mistake">
         <b>Câu ${index+1} cần xem lại</b>
-        <p class="review-question">${formatMathHTML(cleanQuestion)}</p>
+        <p class="review-question">${escapeHtml(cleanQuestion)}</p>
         <p><strong>Bài làm của bạn:</strong></p>
         <pre style="white-space:pre-wrap; background:#fff; padding:8px 10px; border-radius:6px; font-family:inherit;">${escapeHtml(attempt.submittedAnswer)}</pre>
-        <p class="solution-label"><strong>Gợi ý biến đổi chuẩn:</strong> ${formatMathHTML(attempt.correctAnswer)}</p>
+        <p class="solution-label"><strong>Gợi ý biến đổi chuẩn:</strong> ${escapeHtml(attempt.correctAnswer)}</p>
       </article>
     `;
   }).join('');
   const fallback={today:wrong.length?`Làm lại ${wrong.length} câu sai, ghi rõ từng phép tính.`:'Làm thêm câu cùng dạng để duy trì kết quả tốt.',tomorrow:`Xem trước kiến thức ${currentAnalysis.knowledgePoint.name}.`,review:'Ôn lại các bước tính đã sai trước khi làm bài mới.'};
   const planner={...fallback,...(feedback.studyPlanner||{})};
-  summary.innerHTML=`<b>Kết quả luyện tập: ${correctCount}/${total} bài đạt điểm tuyệt đối</b><p>${formatMathHTML(feedback.summary)}</p>${errors?`<div class="review-mistakes">${errors}</div>`:''}<section class="study-planner"><p class="planner-kicker">STUDY PLANNER</p><h4>Kế hoạch ôn tập của bạn</h4><div><b>📝 BTVN hôm nay</b><span>${formatMathHTML(planner.today)}</span></div><div><b>📖 Xem trước ngày mai</b><span>${formatMathHTML(planner.tomorrow)}</span></div><div><b>💡 Ôn bài cũ + lỗi còn hổng</b><span>${formatMathHTML(planner.review)}</span></div></section>`;
+  summary.innerHTML=`<b>Kết quả luyện tập: ${correctCount}/${total} bài đạt điểm tuyệt đối</b><p>${escapeHtml(feedback.summary)}</p>${errors?`<div class="review-mistakes">${errors}</div>`:''}<section class="study-planner"><p class="planner-kicker">STUDY PLANNER</p><h4>Kế hoạch ôn tập của bạn</h4><div><b>📝 BTVN hôm nay</b><span>${escapeHtml(planner.today)}</span></div><div><b>📖 Xem trước ngày mai</b><span>${escapeHtml(planner.tomorrow)}</span></div><div><b>💡 Ôn bài cũ + lỗi còn hổng</b><span>${escapeHtml(planner.review)}</span></div></section>`;
+  renderMath(summary);
 }
 
 document.addEventListener('click',async event=>{
@@ -741,4 +666,5 @@ function goStep(step){
   current.classList.remove('active');
   next.classList.add('active');
   $$('.path-progress i').forEach((item,index)=>item.classList.toggle('active',index<step));
+  renderMath(next);
 }
