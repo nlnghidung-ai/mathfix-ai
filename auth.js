@@ -20,6 +20,7 @@ function getSupabaseClient() {
   return null;
 }
 
+// BẬT / ĐÓNG MODAL ĐĂNG NHẬP
 window.openLoginModal = function() {
   const modal = document.getElementById('loginModal');
   if (modal) modal.classList.remove('hidden');
@@ -52,8 +53,8 @@ window.loginWithGoogle = async function() {
 window.loginWithEmail = async function(e) {
   if (e) e.preventDefault();
   const client = getSupabaseClient();
-  const email = document.getElementById('authEmail').value.trim();
-  const password = document.getElementById('authPassword').value;
+  const email = document.getElementById('authEmail')?.value.trim();
+  const password = document.getElementById('authPassword')?.value;
   const btn = document.getElementById('btnSubmitEmailAuth');
 
   if (!email || !password) {
@@ -61,8 +62,10 @@ window.loginWithEmail = async function(e) {
     return;
   }
 
-  btn.disabled = true;
-  btn.textContent = 'Đang xử lý…';
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Đang xử lý…';
+  }
 
   try {
     const isRegister = window._authMode === 'register';
@@ -81,17 +84,20 @@ window.loginWithEmail = async function(e) {
   } catch (err) {
     alert('Lỗi: ' + (err.message || 'Không thể đăng nhập. Vui lòng kiểm tra lại.'));
   } finally {
-    btn.disabled = false;
-    btn.textContent = window._authMode === 'register' ? 'Đăng ký tài khoản' : 'Đăng nhập';
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = window._authMode === 'register' ? 'Đăng ký tài khoản' : 'Đăng nhập';
+    }
   }
 };
 
 window.setAuthMode = function(mode) {
   window._authMode = mode;
   const isReg = mode === 'register';
-  document.getElementById('tabLogin').classList.toggle('active', !isReg);
-  document.getElementById('tabRegister').classList.toggle('active', isReg);
-  document.getElementById('btnSubmitEmailAuth').textContent = isReg ? 'Đăng ký tài khoản' : 'Đăng nhập';
+  document.getElementById('tabLogin')?.classList.toggle('active', !isReg);
+  document.getElementById('tabRegister')?.classList.toggle('active', isReg);
+  const submitBtn = document.getElementById('btnSubmitEmailAuth');
+  if (submitBtn) submitBtn.textContent = isReg ? 'Đăng ký tài khoản' : 'Đăng nhập';
 };
 
 window.logoutMathFix = async function() {
@@ -131,7 +137,7 @@ function updateAuthUI(user) {
     if (!container) return;
 
     if (user) {
-      // ĐÃ ĐĂNG NHẬP: CHỈ HIỆN DUY NHẤT AVATAR TRÒN, TRONG MENU ĐỔ XUỐNG CÓ "Giới thiệu dự án"
+      // ĐÃ ĐĂNG NHẬP: CHỈ HIỆN DUY NHẤT AVATAR TRÒN CÓ MENU ĐỔ XUỐNG
       const name = user.user_metadata?.full_name || user.email.split('@')[0];
       const email = user.email || '';
       const avatar = user.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name)}`;
@@ -173,74 +179,47 @@ function updateAuthUI(user) {
   });
 }
 
-async function initAuth() {
-  let client = getSupabaseClient();
-  if (!client) {
-    for (let i = 0; i < 20; i++) {
-      await new Promise(r => setTimeout(r, 150));
-      client = getSupabaseClient();
-      if (client) break;
-    }
-  }
-  if (!client) return;
+// ==================== TỰ ĐỘNG TẠO KHUNG LỊCH SỬ CHO TẤT CẢ CÁC TRANG ====================
+function ensureHistoryModalDOM() {
+  if (document.getElementById('historyModal')) return;
 
-  client.auth.onAuthStateChange((event, session) => {
-    currentUser = session?.user || null;
-    updateAuthUI(currentUser);
-    if (event === 'SIGNED_IN' && (window.location.hash.includes('access_token') || window.location.search.includes('code='))) {
-      window.history.replaceState(null, '', window.location.pathname);
-    }
+  const modal = document.createElement('div');
+  modal.id = 'historyModal';
+  modal.className = 'history-modal hidden';
+  modal.innerHTML = `
+    <div class="history-modal-box">
+      <div class="history-modal-head">
+        <h3>📜 Lịch sử học tập của bạn</h3>
+        <button id="btnCloseHistoryModal" class="btn-close-modal" type="button" onclick="document.getElementById('historyModal').classList.add('hidden')">✕</button>
+      </div>
+      <div class="history-tabs">
+        <button class="history-tab-btn active" data-type="analysis" type="button">📝 Bài đã phân tích</button>
+        <button class="history-tab-btn" data-type="practice" type="button">📚 Bài đã luyện tập</button>
+      </div>
+      <div id="historyListContent" class="history-list">
+        <div class="history-loading">Đang tải lịch sử...</div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  modal.querySelectorAll('.history-tab-btn').forEach(btn => {
+    btn.onclick = () => {
+      modal.querySelectorAll('.history-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      loadHistoryTab(btn.dataset.type);
+    };
   });
-
-  try {
-    const { data: { session } } = await client.auth.getSession();
-    currentUser = session?.user || null;
-    updateAuthUI(currentUser);
-  } catch (e) {
-    updateAuthUI(null);
-  }
 }
 
-// ==================== TỰ ĐỘNG LƯU DỮ LIỆU ====================
-
-async function saveAnalysisHistory(transcribed, result) {
-  const client = getSupabaseClient();
-  if (!client || !currentUser) return;
-  try {
-    await client.from('analysis_history').insert({
-      user_id: currentUser.id,
-      problem_text: transcribed?.problemText || '',
-      student_work_text: transcribed?.studentWorkText || '',
-      analysis_result: result
-    });
-  } catch (err) {
-    console.warn('Lỗi lưu lịch sử phân tích:', err);
-  }
-}
-
-async function savePracticeHistory(topic, score, total, attempts) {
-  const client = getSupabaseClient();
-  if (!client || !currentUser) return;
-  try {
-    await client.from('practice_history').insert({
-      user_id: currentUser.id,
-      topic: topic || 'Đại số',
-      score: score,
-      total_questions: total,
-      attempts: attempts
-    });
-  } catch (err) {
-    console.warn('Lỗi lưu lịch sử luyện tập:', err);
-  }
-}
-
-// ==================== XEM LỊCH SỬ HỌC TẬP ====================
-
+// BẬT MODAL LỊCH SỬ (DÙNG ĐƯỢC Ở MỌI TRANG: DASHBOARD, INDEX, ABOUT...)
 window.openHistoryModal = async function() {
+  ensureHistoryModalDOM();
   const modal = document.getElementById('historyModal');
-  if (!modal) return;
-  modal.classList.remove('hidden');
-  loadHistoryTab('analysis');
+  if (modal) {
+    modal.classList.remove('hidden');
+    loadHistoryTab('analysis');
+  }
 };
 
 window.loadHistoryTab = async function(type) {
@@ -265,7 +244,7 @@ window.loadHistoryTab = async function(type) {
 
     listContainer.innerHTML = data.map(item => {
       const date = new Date(item.created_at).toLocaleString('vi-VN');
-      const topic = item.analysis_result?.analysisSets?.[0]?.knowledgePoint?.name || 'Bài toán';
+      const topic = item.analysis_result?.analysisSets?.[0]?.knowledgePoint?.name || 'Toán THCS';
       const errorsCount = item.analysis_result?.analysisSets?.[0]?.learningErrors?.length || 0;
       return `
         <div class="history-item">
@@ -309,9 +288,70 @@ window.loadHistoryTab = async function(type) {
   }
 };
 
+// ==================== TỰ ĐỘNG LƯU DỮ LIỆU ====================
+
+async function saveAnalysisHistory(transcribed, result) {
+  const client = getSupabaseClient();
+  if (!client || !currentUser) return;
+  try {
+    await client.from('analysis_history').insert({
+      user_id: currentUser.id,
+      problem_text: transcribed?.problemText || '',
+      student_work_text: transcribed?.studentWorkText || '',
+      analysis_result: result
+    });
+  } catch (err) {
+    console.warn('Lỗi lưu lịch sử phân tích:', err);
+  }
+}
+
+async function savePracticeHistory(topic, score, total, attempts) {
+  const client = getSupabaseClient();
+  if (!client || !currentUser) return;
+  try {
+    await client.from('practice_history').insert({
+      user_id: currentUser.id,
+      topic: topic || 'Đại số',
+      score: score,
+      total_questions: total,
+      attempts: attempts
+    });
+  } catch (err) {
+    console.warn('Lỗi lưu lịch sử luyện tập:', err);
+  }
+}
+
 window.MathFixAuth = {
   saveAnalysis: saveAnalysisHistory,
   savePractice: savePracticeHistory
 };
+
+async function initAuth() {
+  let client = getSupabaseClient();
+  if (!client) {
+    for (let i = 0; i < 20; i++) {
+      await new Promise(r => setTimeout(r, 150));
+      client = getSupabaseClient();
+      if (client) break;
+    }
+  }
+  if (!client) return;
+
+  client.auth.onAuthStateChange((event, session) => {
+    currentUser = session?.user || null;
+    updateAuthUI(currentUser);
+    if (event === 'SIGNED_IN' && (window.location.hash.includes('access_token') || window.location.search.includes('code='))) {
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  });
+
+  try {
+    const { data: { session } } = await client.auth.getSession();
+    currentUser = session?.user || null;
+    updateAuthUI(currentUser);
+  } catch (e) {
+    updateAuthUI(null);
+  }
+}
 
 initAuth();
