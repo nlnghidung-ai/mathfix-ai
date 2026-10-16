@@ -1,6 +1,6 @@
 /* Cầu nối giữa giao diện và Netlify functions */
 window.HomeworkAnalysisService = {
-  // Giai đoạn 0: Quét chữ nhanh để học sinh kiểm tra
+  // Giai đoạn 0: Quét chữ và kiểm định phạm vi
   async scan(image) {
     const endpoint = location.hostname === 'localhost' ? '/api/analyze' : '/.netlify/functions/analyze';
     const response = await fetch(endpoint, {
@@ -18,7 +18,7 @@ window.HomeworkAnalysisService = {
     return raw;
   },
 
-  // Giai đoạn 1: Phân tích lỗi sai
+  // Giai đoạn 1: Phân tích bài làm (Bao gồm kiểm tra đề và soi bước giải)
   async analyze(image, transcribed) {
     if (location.protocol === 'file:') throw new Error('Hãy mở trang bằng server cục bộ hoặc qua Netlify để AI có thể phân tích ảnh.');
     let response;
@@ -48,14 +48,14 @@ window.HomeworkAnalysisService = {
       const topic = item.topic || errors[0]?.title || 'Kiến thức cần ôn';
       return {
         title: item.title || `Bài ${index + 1}`,
-        subject: { id: 'detected-subject', name: item.subject || raw.subject || 'Toán' },
+        subject: { id: 'detected-subject', name: item.subject || raw.subject || 'Đại số THCS' },
         knowledgePoint: { id: `topic-${index}`, name: topic },
         learningErrors: errors.map((error, errorIndex) => ({
           id: `${index}-${errorIndex}`, position: error.position || `Bước ${errorIndex + 1}`, title: error.title || 'Cần xem lại phép tính', severity: 'revisit',
           studentWork: error.studentWork || 'Chưa đọc rõ bước làm', correction: error.expectedWork || error.correction || 'Xem lại lời giải',
           explanation: error.explanation || 'Hãy so sánh lại với dữ kiện đề bài.', tip: error.note || 'Tính lại từng bước trước khi chuyển sang bước tiếp theo.'
         })),
-        learningResources: [{ id: `video-${index}`, type: 'video', title: `Ôn lại: ${topic}`, url: `https://www.youtube.com/results?search_query=${encodeURIComponent(topic + ' toán')}` }],
+        learningResources: [{ id: `video-${index}`, type: 'video', title: `Ôn lại: ${topic}`, url: `https://www.youtube.com/results?search_query=${encodeURIComponent(topic + ' toán THCS')}` }],
         learningPath: [
           { step: 1, title: `Học lại: ${topic}`, goal: 'Xem lại kiến thức và ví dụ cơ bản trước khi luyện tập.' },
           { step: 2, title: 'AI tạo 4 bài luyện', goal: '1 câu dễ hơn, 2 câu cùng mức độ và 1 câu nâng cao.' },
@@ -65,10 +65,16 @@ window.HomeworkAnalysisService = {
         aiRecommendation: { message: item.improvements?.[0] || `AI đã phát hiện ${errors.length} điểm cần xem lại trong ${item.title || `bài ${index + 1}`}.`, priority: 'normal' }
       };
     };
-    return { analysisSets: analyses.map(normalize), sourceImage: image };
+    return {
+      analysisSets: analyses.map(normalize),
+      sourceImage: image,
+      isProblemValid: raw.isProblemValid,
+      problemIssue: raw.problemIssue,
+      problemCorrectionSuggestion: raw.problemCorrectionSuggestion
+    };
   },
 
-  // Giai đoạn 1.5: Yêu cầu AI suy nghĩ và thẩm định lại một bước bị nghi ngờ
+  // Thẩm định lại bước giải ("AI chỉ sai rồi")
   async recheckStep(data) {
     const endpoint = location.hostname === 'localhost' ? '/api/analyze' : '/.netlify/functions/analyze';
     const response = await fetch(endpoint, {
@@ -77,11 +83,8 @@ window.HomeworkAnalysisService = {
       body: JSON.stringify({ action: 'recheck', data })
     });
     const textData = await response.text();
-    try {
-      return JSON.parse(textData);
-    } catch {
-      throw new Error('Không thể thẩm định lại bước này.');
-    }
+    try { return JSON.parse(textData); }
+    catch { throw new Error('Không thể thẩm định lại bước này.'); }
   },
 
   // Giai đoạn 2: Tạo bài tập
@@ -99,7 +102,20 @@ window.HomeworkAnalysisService = {
     }
   },
 
-  // Giai đoạn 3: Nhận xét kết quả
+  // Chấm bài tự luận từng bước cho từng bài luyện tập
+  async gradePractice(data) {
+    const endpoint = location.hostname === 'localhost' ? '/api/analyze' : '/.netlify/functions/analyze';
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'grade-practice', data })
+    });
+    const textData = await response.text();
+    try { return JSON.parse(textData); }
+    catch { throw new Error('AI chưa thể chấm bài làm này.'); }
+  },
+
+  // Giai đoạn 3: Nhận xét tổng thể
   async reviewPractice(data) {
     const endpoint = location.hostname === 'localhost' ? '/api/review-practice' : '/.netlify/functions/review-practice';
     const response = await fetch(endpoint, {
