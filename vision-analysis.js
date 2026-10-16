@@ -25,9 +25,9 @@ window.HomeworkAnalysisService = {
     const endpoint = location.hostname === 'localhost' ? '/api/analyze' : '/.netlify/functions/analyze';
     try { 
       response = await fetch(endpoint, { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ action: 'analyze', image, transcribed }) 
+        method:'POST', 
+        headers:{'Content-Type':'application/json'}, 
+        body:JSON.stringify({ action: 'analyze', image, transcribed }) 
       }); 
     } catch { 
       throw new Error('Chưa kết nối được máy chủ AI.'); 
@@ -48,7 +48,7 @@ window.HomeworkAnalysisService = {
       const topic = item.topic || errors[0]?.title || 'Kiến thức cần ôn';
       return {
         title: item.title || `Bài ${index + 1}`,
-        subject: { id: 'detected-subject', name: item.subject || raw.subject || 'Đại số THCS' },
+        subject: { id: 'detected-subject', name: item.subject || raw.subject || 'Toán THCS' },
         knowledgePoint: { id: `topic-${index}`, name: topic },
         learningErrors: errors.map((error, errorIndex) => ({
           id: `${index}-${errorIndex}`, position: error.position || `Bước ${errorIndex + 1}`, title: error.title || 'Cần xem lại phép tính', severity: 'revisit',
@@ -62,7 +62,8 @@ window.HomeworkAnalysisService = {
           { step: 3, title: 'AI nhận xét sau luyện tập', goal: 'Xem rõ lỗi sai và hoàn thiện kiến thức.' }
         ],
         generatedExercises: [],
-        aiRecommendation: { message: item.improvements?.[0] || `AI đã phát hiện ${errors.length} điểm cần xem lại trong ${item.title || `bài ${index + 1}`}.`, priority: 'normal' }
+        aiRecommendation: { message: item.improvements?.[0] || `AI đã phát hiện ${errors.length} điểm cần xem lại trong ${item.title || `bài ${index + 1}`}.`, priority: 'normal' },
+        modelSolution: item.modelSolution || ''
       };
     };
     return {
@@ -87,22 +88,24 @@ window.HomeworkAnalysisService = {
     catch { throw new Error('Không thể thẩm định lại bước này.'); }
   },
 
-  // Giai đoạn 2: Tạo bài tập
+  // Giai đoạn 2: Tạo bài tập (ĐÃ ĐƯỢC KẾT NỐI CHUẨN VÀO ANALYZE.MJS)
   async generateExercises(topic, errors) {
-    const endpoint = location.hostname === 'localhost' ? '/api/generate-exercises' : '/.netlify/functions/generate-exercises';
+    const endpoint = location.hostname === 'localhost' ? '/api/analyze' : '/.netlify/functions/analyze';
     try {
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic, errors })
+        body: JSON.stringify({ action: 'generate-exercises', data: { topic, errors } })
       });
-      return await res.json();
-    } catch {
+      const textData = await res.text();
+      return JSON.parse(textData);
+    } catch (err) {
+      console.warn('Lỗi gọi generateExercises:', err);
       return { exercises: [] };
     }
   },
 
-  // Chấm bài tự luận từng bước cho từng bài luyện tập
+  // Chấm bài tự luận từng bước
   async gradePractice(data) {
     const endpoint = location.hostname === 'localhost' ? '/api/analyze' : '/.netlify/functions/analyze';
     const response = await fetch(endpoint, {
