@@ -159,7 +159,7 @@ $('#captureBtn').onclick=()=>{
   $('#cameraMode').classList.add('hidden');
 };
 
-// BƯỚC 1: BẤM NÚT ĐỌC BÀI TOÁN -> KIỂM TRA PHẠM VI TOÁN THCS VÀ ĐỔ VÀO 2 Ô TEXTAREA
+// BƯỚC 1: BẤM NÚT ĐỌC BÀI TOÁN -> ĐỔ VÀO 2 Ô TEXTAREA ĐỂ TỰ CHỈNH SỬA
 $('#analyzeBtn').onclick=async()=>{
   if(cropper){
     const canvas = cropper.getCroppedCanvas({ maxWidth: 2048, maxHeight: 2048 });
@@ -177,7 +177,7 @@ $('#analyzeBtn').onclick=async()=>{
     const scanRes = await HomeworkAnalysisService.scan(imageUrl);
     currentTranscribed = scanRes;
     
-    // Gán dữ liệu dạng văn bản thông thường (Nếu ảnh không có bài làm, ô bên dưới sẽ rỗng 100%)
+    // Gán dữ liệu vào ô textarea dạng gõ phím thông thường
     $('#scannedProblem').value = toPlainText(scanRes.problemText || '');
     $('#scannedStudentWork').value = toPlainText(scanRes.studentWorkText || '');
     
@@ -266,6 +266,7 @@ $('#btnProceedAnalyze').onclick=async()=>{
     const result = await HomeworkAnalysisService.analyze(imageUrl, currentTranscribed);
     $('#loadingPanel').classList.add('hidden');
     showResult(result);
+    // BẮT ĐẦU TẢI NGẦM 4 BÀI TẬP
     loadPracticeInBackground(result);
 
     if (window.MathFixAuth?.saveAnalysis) {
@@ -278,24 +279,32 @@ $('#btnProceedAnalyze').onclick=async()=>{
   }
 };
 
-// BƯỚC 3: TẢI NGẦM 4 BÀI TẬP
+// BƯỚC 3: TẢI NGẦM 4 BÀI TẬP VÀ ĐỔ VÀO GIAO DIỆN
 async function loadPracticeInBackground(result){
   const defaultLevels = ['Dễ hơn', 'Tương đương', 'Tương đương', 'Nâng cao'];
   for(let item of result.analysisSets){
-    const res = await HomeworkAnalysisService.generateExercises(item.knowledgePoint.name, item.learningErrors);
-    item.generatedExercises = (res.exercises || []).slice(0, 4).map((ex, idx)=>({
-      level: ex.level || defaultLevels[idx] || 'Tương đương',
-      question: ex.question,
-      answer: String(ex.answer),
-      solution: ex.solution || ''
-    }));
-    if(currentAnalysis && currentAnalysis.title === item.title){
+    try {
+      const topic = item.knowledgePoint?.name || item.topic || 'Toán THCS';
+      const errors = item.learningErrors || [];
+      const res = await HomeworkAnalysisService.generateExercises(topic, errors);
+      
+      const rawList = res.exercises || (Array.isArray(res) ? res : []);
+      item.generatedExercises = rawList.slice(0, 4).map((ex, idx)=>({
+        level: ex.level || defaultLevels[idx] || 'Tương đương',
+        question: ex.question || 'Bài tập rèn luyện',
+        answer: String(ex.answer || ''),
+        solution: ex.solution || ''
+      }));
+
+      // Khi tải xong, cập nhật ngay vào khung hiển thị bài tập
       const container = $('#practiceBox');
-      if(container) {
+      if (container && item.generatedExercises.length) {
         container.innerHTML = practiceMarkup(item.generatedExercises);
         bindPracticeEvents();
         renderMath(container);
       }
+    } catch (err) {
+      console.warn('Lỗi nạp bài luyện tập:', err);
     }
   }
 }
@@ -306,7 +315,7 @@ function showResult(result){
   $('#resultPanel').classList.remove('hidden');
   $('#resultImage').src=imageUrl;
 
-  // 1. KIỂM ĐỊNH ĐỀ BÀI: Nếu đề bài sai thì hiện bảng cảnh báo đỏ
+  // 1. KIỂM ĐỊNH ĐỀ BÀI
   const invalidBanner = $('#problemInvalidBanner');
   if (result.isProblemValid === false) {
     invalidBanner.classList.remove('hidden');
@@ -317,7 +326,7 @@ function showResult(result){
     invalidBanner.classList.add('hidden');
   }
 
-  // 2. HƯỚNG DẪN GIẢI MẪU: Nếu học sinh để trống bài làm, hiện khung giải mẫu
+  // 2. HƯỚNG DẪN GIẢI MẪU (KHI HỌC SINH ĐỂ TRỐNG BÀI LÀM)
   const modelBox = $('#modelSolutionBox');
   const firstAnalysis = result.analysisSets?.[0] || {};
   if (firstAnalysis.modelSolution) {
@@ -355,11 +364,9 @@ function showAnalysis(index){
         <p><b>Vị trí:</b> ${e.position}. ${e.explanation}</p>
         <div class="tip">💡 ${e.tip}</div>
         
-        <!-- HỘP PHẢN BIỆN CỦA HỌC SINH -->
         <div class="recheck-box" id="recheck-box-${errIdx}">
           <button class="btn-recheck-step" data-index="${errIdx}" type="button">🤔 Phản biện (AI chỉ sai rồi)</button>
           
-          <!-- KHUNG NHẬP NỘI DUNG PHẢN BIỆN (Mặc định ẩn) -->
           <div class="recheck-input-box hidden" id="recheck-input-box-${errIdx}">
             <label>💬 Nhập lập luận/cách giải thích của bạn:</label>
             <textarea class="recheck-argument-text" id="recheck-text-${errIdx}" placeholder="Ví dụ: Em áp dụng tính chất giao hoán (x+1)(x+3) = (x+3)(x+1) hoặc em biến đổi theo cách..."></textarea>
@@ -369,7 +376,6 @@ function showAnalysis(index){
             </div>
           </div>
 
-          <!-- KẾT QUẢ PHÂN ĐỊNH 3 TRƯỜNG HỢP CỦA AI -->
           <div class="recheck-feedback hidden" id="recheck-feedback-${errIdx}"></div>
         </div>
       </article>
@@ -391,7 +397,6 @@ function showAnalysis(index){
 
 // BƯỚC XỬ LÝ SỰ KIỆN PHẢN BIỆN 2 CHIỀU
 function bindRecheckEvents(){
-  // 1. Bấm mở khung gõ phản biện
   $$('.btn-recheck-step').forEach(btn => {
     btn.onclick = () => {
       const idx = btn.dataset.index;
@@ -400,7 +405,6 @@ function bindRecheckEvents(){
     };
   });
 
-  // 2. Bấm hủy phản biện
   $$('.btn-cancel-recheck').forEach(btn => {
     btn.onclick = () => {
       const idx = btn.dataset.index;
@@ -409,7 +413,6 @@ function bindRecheckEvents(){
     };
   });
 
-  // 3. Gửi lập luận phản biện cho AI
   $$('.btn-submit-recheck').forEach(btn => {
     btn.onclick = async () => {
       const idx = Number(btn.dataset.index);
@@ -437,19 +440,15 @@ function bindRecheckEvents(){
         inputBox.classList.add('hidden');
         feedback.classList.remove('hidden');
 
-        // PHÂN ĐỊNH 3 TRƯỜNG HỢP:
         if (res.verdictType === 'ai_wrong') {
-          // Trường hợp 1: AI sai thật, học sinh phản biện đúng
           card.classList.add('acknowledged-correct');
           card.querySelector('.severity').textContent = '✓ Bạn làm đúng';
           feedback.className = 'recheck-feedback ai_wrong';
           feedback.innerHTML = `<strong>🎉 ${res.verdictTitle}:</strong> ${res.explanation}`;
         } else if (res.verdictType === 'both_flawed') {
-          // Trường hợp 2: Cả 2 cùng có thiếu sót
           feedback.className = 'recheck-feedback both_flawed';
           feedback.innerHTML = `<strong>💡 ${res.verdictTitle}:</strong> ${res.explanation}`;
         } else {
-          // Trường hợp 3: Học sinh hiểu sai, AI giữ vững lập trường
           feedback.className = 'recheck-feedback student_wrong';
           feedback.innerHTML = `<strong>⚠️ ${res.verdictTitle}:</strong> ${res.explanation}`;
         }
@@ -469,33 +468,46 @@ function renderPath(r){
     <p class="step-tag">BƯỚC ${s.step}</p>
     <h3>${s.title}</h3>
     <p>${s.goal}</p>
-    ${i===0?`<a class="resource" target="_blank" rel="noopener" href="${r.learningResources[0].url}">▶ ${r.learningResources[0].title}</a><button class="btn next-step">Đã học lý thuyết →</button>`:''}
-    ${i===1?`<div id="practiceBox">${r.generatedExercises?.length ? practiceMarkup(r.generatedExercises) : '<div class="ai-created">✨ AI đang tạo 4 bài luyện tập phù hợp từ lỗi của bạn...</div>'}</div>`:''}
-    ${i===2?`<div id="practiceSummary" class="summary-card">Hoàn thành các bài luyện tự luận để nhận xét kết quả.</div><button class="btn restart">Tạo phân tích mới</button>`:''}
+    ${i===0?`<button class="btn next-step" type="button">Đã học lý thuyết → Bắt đầu luyện tập</button>`:''}
+    ${i===1?`<div id="practiceBox">${r.generatedExercises?.length ? practiceMarkup(r.generatedExercises) : '<div class="ai-created">⏳ Đang tạo 4 bài luyện tập thích ứng từ lỗi của bạn...</div>'}</div>`:''}
+    ${i===2?`<div id="practiceSummary" class="summary-card">Hoàn thành các bài luyện tự luận để nhận xét kết quả.</div><button class="btn restart" type="button">Tạo phân tích mới</button>`:''}
   </article>`).join('');
-  $('.next-step').onclick=()=>goStep(2);
+  
+  const nextBtn = $('.next-step');
+  if (nextBtn) {
+    nextBtn.onclick = () => {
+      goStep(2);
+      const pBox = $('#practiceBox');
+      if (pBox) renderMath(pBox);
+    };
+  }
+
   bindPracticeEvents();
-  $('.restart').onclick=()=>location.reload();
+  const restartBtn = $('.restart');
+  if (restartBtn) restartBtn.onclick = () => location.reload();
   renderMath($('#pathSteps'));
 }
 
-// BỘ GIAO DIỆN HIỂN THỊ 4 BÀI TẬP VỚI Ô TEXTAREA NHẬP LỜI GIẢI TỰ LUẬN 2-4 DÒNG
+// BỘ GIAO DIỆN HIỂN THỊ 4 BÀI TẬP VỚI CÂU 1, CÂU 2, CÂU 3, CÂU 4 (KHÔNG BỊ BỘ LỌC LÀM MẤT BÀI)
 function practiceMarkup(items){
-  const levels=['Dễ hơn','Tương đương','Nâng cao'];
-  const classes={'Dễ hơn':'easier','Tương đương':'basic','Nâng cao':'advanced'};
-  let number=0;
-  return `<div class="ai-created">✨ AI đã tạo 4 bài luyện tập tự luận. Bạn hãy nhập các bước giải biến đổi (gõ tự nhiên bằng bàn phím) để AI chấm từng bước nhé:</div>
-  ${levels.map(level=>({level,items:items.filter(x=>x.level===level)})).filter(group=>group.items.length).map(group=>`
-    <section class="practice-level-group ${classes[group.level]}">
-      <h4>${group.level} · ${group.items.length} câu</h4>
-      ${group.items.map(x=>{
-        number++;
+  if (!items || !items.length) {
+    return '<div class="ai-created">Chưa có bài luyện tập nào được nạp.</div>';
+  }
+  const classes = { 'Dễ hơn': 'easier', 'Tương đương': 'basic', 'Nâng cao': 'advanced' };
+  
+  return `
+    <div class="ai-created">✨ AI đã tạo 4 bài luyện tập tự luận. Bạn hãy nhập các bước giải biến đổi (gõ tự nhiên bằng bàn phím) để AI chấm từng bước nhé:</div>
+    <div class="practice-questions-list">
+      ${items.map((x, idx) => {
+        const num = idx + 1;
+        const lvl = x.level || (idx === 0 ? 'Dễ hơn' : idx === 3 ? 'Nâng cao' : 'Tương đương');
+        const cls = classes[lvl] || 'basic';
         return `
-          <div class="practice-question" data-level="${x.level}" data-question="${encodeURIComponent(x.question)}" data-solution="${encodeURIComponent(x.solution||'')}" data-index="${number-1}">
+          <div class="practice-question" data-level="${lvl}" data-question="${encodeURIComponent(x.question)}" data-solution="${encodeURIComponent(x.solution || '')}" data-index="${idx}">
             <label>
-              <span class="level-tag ${classes[group.level]}">${group.level}</span>
-              <strong class="question-number">Câu ${number}:</strong>
-              <span class="question-text">${x.question.replace(/^\s*Câu\s*\d+\s*[:.)-]?\s*/i,'')}</span>
+              <span class="level-tag ${cls}">${lvl}</span>
+              <strong class="question-number">Câu ${num}:</strong>
+              <span class="question-text">${x.question.replace(/^\s*Câu\s*\d+\s*[:.)-]?\s*/i, '')}</span>
             </label>
             <div class="practice-solution-box">
               <textarea class="practice-steps-textarea" placeholder="Gõ các bước giải của bạn vào đây (khoảng 2-4 dòng, gõ phím bình thường không cần gõ mã)..." rows="3"></textarea>
@@ -505,9 +517,9 @@ function practiceMarkup(items){
           </div>
         `;
       }).join('')}
-    </section>
-  `).join('')}
-  <button id="finishPractice" class="btn" disabled>Hoàn thành bài luyện →</button>`;
+    </div>
+    <button id="finishPractice" class="btn" disabled>Hoàn thành bài luyện →</button>
+  `;
 }
 
 // XỬ LÝ CHẤM TỰ LUẬN TỪNG BƯỚC BẰNG AI KHI HỌC SINH NỘP BÀI
