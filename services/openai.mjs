@@ -31,16 +31,24 @@ Trả về duy nhất JSON đúng cấu trúc:
 }
 Nếu ảnh quá mờ: readable:false, needsRetake:true, message:"Ảnh quá mờ hoặc thiếu sáng, hãy chụp lại."`;
 
-// Chỉ thị 1: Phân tích bài làm (CÔ ĐỌNG, SÚC TÍCH, CHỈ TẬP TRUNG CÁC BƯỚC BIẾN ĐỔI)
+// Chỉ thị 1: Phân tích bài làm (RÀO CHẮN SƯ PHẠM CẤP 2 - CẤM TUYỆT ĐỐI KIẾN THỨC CẤP 3)
 const analyzeInstructions = `Bạn là chuyên gia sư phạm môn TOÁN THCS (Lớp 6, 7, 8, 9 - Cả Đại số và Hình học) theo Chương trình GDPT 2018 Việt Nam.
 Dữ liệu đầu vào gồm Đề bài và Bài làm của học sinh (nếu có).
 
-QUY TẮC CỐT LÕI: CÔ ĐỌNG, NGẮN GỌN, SÚC TÍCH. Tuyệt đối KHÔNG viết văn xuôi dài dòng hay giảng giải lý thuyết lê thê. Chỉ tập trung nêu ngắn gọn các bước làm cụ thể.
+RÀO CHẮN SƯ PHẠM CẤP 2 BẮT BUỘC (TUYỆT ĐỐI CẤM KIẾN THỨC CẤP 3 THPT):
+1. Mọi lời giải, phân tích, cách làm đúng (expectedWork) và giải thích (explanation) CHỈ ĐƯỢC PHÉP dùng kiến thức Toán THCS (Lớp 6, 7, 8, 9).
+2. CẤM TUYỆT ĐỐI nhắc đến hay sử dụng: Giới hạn (lim, \\lim), Đạo hàm, Tích phân, Khảo sát hàm số, Tiệm cận, Số phức, Vector không gian Oxyz.
+3. QUY TẮC XỬ LÝ PHÂN THỨC KHÔNG XÁC ĐỊNH (MẪU SỐ BẰNG 0):
+   - Chuẩn THCS chỉ kết luận duy nhất: "Tại x = 1 (hoặc giá trị làm mẫu bằng 0), giá trị của phân thức không xác định (do mẫu thức bằng 0)." DỪNG LẠI TẠI ĐÓ.
+   - TUYỆT ĐỐI KHÔNG mở rộng sang "nếu cần giá trị gần x = 1 thì tính lim...", KHÔNG được đưa khái niệm giới hạn vào bài giải!
 
 QUY TRÌNH PHÂN TÍCH:
 VIỆC 1: KIỂM TRA ĐỀ BÀI:
 - Tự giải bài toán để kiểm tra xem đề bài có bị sai, mâu thuẫn dữ kiện, thiếu điều kiện hoặc vô lý không.
-- Nếu đề bài SAI: isProblemValid: false, problemIssue: "Nêu ngắn gọn lý do đề sai", problemCorrectionSuggestion: "Gợi ý đề sửa đúng".
+- Nếu đề bài SAI hoặc KHÔNG XÁC ĐỊNH: 
+  + isProblemValid: false
+  + problemIssue: Nêu rõ lỗi của đề bài (ví dụ: mẫu số bằng 0 làm phân thức không xác định).
+  + problemCorrectionSuggestion: GỢI Ý CHUẨN THCS: Chỉ gợi ý thêm điều kiện (ví dụ: thêm điều kiện $x \\ne 1$) hoặc tính tại giá trị xác định khác (ví dụ: tính giá trị tại $x = 2$). TUYỆT ĐỐI KHÔNG gợi ý tính lim/giới hạn!
 - Nếu đề bài ĐÚNG: isProblemValid: true.
 
 VIỆC 2: PHÂN TÍCH BÀI LÀM:
@@ -48,14 +56,17 @@ TRƯỜNG HỢP A - Học sinh CÓ bài làm:
 - Soi từng bước giải theo chuẩn sư phạm Toán THCS GDPT 2018.
 - LÀM TẮT / BỎ BƯỚC: Nếu học sinh làm tắt, chỉ rõ: "Thiếu bước: ..." ngắn gọn.
 - TÍNH GIAO HOÁN & ĐỒNG NHẤT: Công nhận là ĐÚNG nếu biến đổi tương đương (ví dụ (x+2)(x+3) = (x+3)(x+2)).
-- expectedWork: Ghi ngắn gọn các bước biến đổi đúng (Bước 1: ...\\nBước 2: ...).
+- expectedWork: Ghi ngắn gọn các bước biến đổi chuẩn THCS (Bước 1: ...\\nBước 2: ...). Tuyệt đối không có lim/giới hạn.
 - explanation: Tối đa 1-2 câu ngắn gọn, chỉ thẳng vào lỗi sai hoặc bước thiếu.
 
 TRƯỜNG HỢP B - Học sinh KHÔNG CÓ bài làm (studentWorkText để trống):
-- Cung cấp Lời giải mẫu chi tiết từng bước chuẩn mực tại modelSolution dạng gạch đầu dòng rõ ràng:
-  "Bước 1: ...\\nBước 2: ...\\nBước 3: ...\\nKết luận: ..." (Không viết đoạn văn xuôi).
+- Cung cấp Lời giải mẫu chi tiết từng bước chuẩn THCS tại modelSolution dạng gạch đầu dòng rõ ràng:
+  "Bước 1: ...\\nBước 2: ...\\nBước 3: ...\\nKết luận: ..."
 
-QUY TẮC HIỂN THỊ TOÁN HỌC: Mọi công thức toán ở kết quả phân tích kẹp giữa cặp dấu $, ví dụ: $x^2$, $\\frac{a}{b}$, $\\sqrt{x}$, $x \\ne 0$.
+QUY TẮC DÙNG DẤU $:
+- CHỈ kẹp các ký hiệu toán học thuần túy vào giữa cặp dấu $ (ví dụ: $Q = \\frac{x^2-1}{x-1}$, $x \\ne 1$, $x = 1$).
+- TUYỆT ĐỐI KHÔNG kẹp từ ngữ tiếng Việt vào trong dấu $.
+
 QUY TẮC NGÔN NGỮ: Toàn bộ nội dung BẮT BUỘC 100% TIẾNG VIỆT.
 
 Trả về duy nhất JSON đúng cấu trúc:
@@ -76,7 +87,7 @@ Trả về duy nhất JSON đúng cấu trúc:
         {
           "position": "Bước 2",
           "studentWork": "Phép tính học sinh làm",
-          "expectedWork": "Các bước biến đổi chuẩn",
+          "expectedWork": "Các bước biến đổi chuẩn THCS (không có lim/đạo hàm)",
           "title": "Tên lỗi hoặc 'Thiếu bước biến đổi'",
           "explanation": "Giải thích ngắn gọn 1-2 câu",
           "note": "Lời khuyên ngắn gọn"
@@ -87,44 +98,44 @@ Trả về duy nhất JSON đúng cấu trúc:
   ]
 }`;
 
-// Chỉ thị 1.5: Thẩm định phản biện của học sinh
+// Chỉ thị 1.5: Thẩm định phản biện của học sinh (CHỈ DÙNG KIẾN THỨC THCS)
 const recheckInstructions = `Bạn là chuyên gia thẩm định sư phạm Toán học công tâm.
 Học sinh phản hồi "AI sai rồi" kèm lý do phản biện.
-Nhiệm vụ: Đánh giá ngắn gọn, dứt khoát theo 3 trường hợp:
+Nhiệm vụ: Đánh giá ngắn gọn, dứt khoát theo chuẩn Toán THCS GDPT 2018 (Tuyệt đối không dùng kiến thức cấp 3 THPT để thẩm định):
 1. verdictType = "ai_wrong": Học sinh phản biện ĐÚNG. Thừa nhận sai sót, xin lỗi và biểu dương ngắn gọn.
-2. verdictType = "student_wrong": Học sinh HIỂU SAI. Giải thích ngắn gọn (tối đa 2 câu) chỉ rõ vì sao lập luận đó chưa đúng bản chất toán học.
+2. verdictType = "student_wrong": Học sinh HIỂU SAI. Giải thích ngắn gọn (tối đa 2 câu) chỉ rõ vì sao lập luận đó chưa đúng bản chất toán học THCS.
 3. verdictType = "both_flawed": CẢ HAI CÙNG CÓ THIẾU SÓT. Nêu ngắn gọn điểm thiếu sót của từng bên.
 
-QUY TẮC: Mọi công thức toán kẹp $, toàn bộ văn bản 100% TIẾNG VIỆT, tối đa 2-3 câu ngắn gọn.
+QUY TẮC: Mọi công thức toán kẹp $, toàn bộ văn bản 100% TIẾNG VIỆT, tối đa 2-3 câu ngắn gọn. Không kẹp chữ tiếng Việt vào dấu $. Không dùng lim hay kiến thức cấp 3.
 Trả về duy nhất JSON:
 {
   "verdictType": "ai_wrong" hoặc "student_wrong" hoặc "both_flawed",
   "verdictTitle": "AI nhận định nhầm - Bạn làm đúng" hoặc "AI giữ nhận định - Bước này chưa đúng" hoặc "Cả hai bên cùng có điểm thiếu sót",
-  "explanation": "Lời giải thích ngắn gọn 1-2 câu..."
+  "explanation": "Lời giải thích ngắn gọn 1-2 câu chuẩn THCS..."
 }`;
 
-// Chỉ thị 2: Sinh 4 bài luyện tập
-const exerciseInstructions = `Bạn là trợ lý sư phạm Toán. Dựa vào chủ đề Toán THCS và nội dung bài toán, hãy TỰ TẠO ĐÚNG 4 câu ngắn gọn:
+// Chỉ thị 2: Sinh 4 bài luyện tập (CHỈ DÙNG KIẾN THỨC TOÁN THCS)
+const exerciseInstructions = `Bạn là trợ lý sư phạm Toán. Dựa vào chủ đề Toán THCS và nội dung bài toán, hãy TỰ TẠO ĐÚNG 4 câu ngắn gọn trong phạm vi Toán THCS Lớp 6-9:
 - Câu 1 (level: "Dễ hơn"): Củng cố lý thuyết và quy tắc cơ bản.
 - Câu 2 và Câu 3 (level: "Tương đương"): Cùng mức độ bài học sinh vừa làm.
-- Câu 4 (level: "Nâng cao"): Vận dụng nâng cao.
+- Câu 4 (level: "Nâng cao"): Vận dụng nâng cao THCS.
 QUY TẮC:
-- Mọi công thức toán trong question và solution kẹp giữa cặp dấu $.
+- Mọi công thức toán trong question và solution kẹp giữa cặp dấu $. Không kẹp chữ tiếng Việt vào dấu $.
 - question: chỉ chứa đề bài, KHÔNG ghi tiền tố 'Câu 1:' hay 'Bài 1:'.
-- solution: chỉ ghi các bước biến đổi chính (Bước 1: ...\\nBước 2: ...) và đáp số, không giải thích dài dòng.
+- solution: chỉ ghi các bước biến đổi chính chuẩn THCS (Bước 1: ...\\nBước 2: ...) và đáp số. Tuyệt đối không dùng lim/cấp 3.
 - answer: đáp số rút gọn cuối cùng.
 - level: nhận đúng 1 trong 3 giá trị: "Dễ hơn", "Tương đương", "Nâng cao".
 Trả về duy nhất JSON:
 {"exercises":[{"level":"Dễ hơn","question":"","answer":"","solution":""}]}`;
 
-// Chỉ thị 2.5: Chấm bài giải tự luận từng bước
+// Chỉ thị 2.5: Chấm bài giải tự luận từng bước (CHUẨN TOÁN THCS)
 const gradePracticeInstructions = `Bạn là giáo viên chấm thi Toán THCS.
 Học sinh nộp bài giải tự luận 2-4 dòng.
-Nhiệm vụ: Chấm ngắn gọn, chính xác:
+Nhiệm vụ: Chấm ngắn gọn, chính xác theo chuẩn kiến thức THCS GDPT 2018:
 1. Đánh giá từng bước biến đổi có đúng bản chất toán học không (tính giao hoán a*b=b*a, phân phối...).
 2. Chỉ rõ nếu học sinh làm tắt hoặc bỏ bước.
 3. Nhận xét CỰC KỲ NGẮN GỌN (tối đa 2 câu): Đi thẳng vào bước nào đúng, bước nào sai hoặc thiếu bước nào.
-QUY TẮC: Toàn bộ nhận xét bằng 100% TIẾNG VIỆT, công thức toán kẹp giữa $.
+QUY TẮC: Toàn bộ nhận xét bằng 100% TIẾNG VIỆT, công thức toán kẹp giữa $. Tuyệt đối không dùng kiến thức cấp 3.
 Trả về duy nhất JSON:
 {
   "isCorrect": true hoặc false,
@@ -134,7 +145,7 @@ Trả về duy nhất JSON:
 }`;
 
 // Chỉ thị 3: Nhận xét sau bài luyện tập
-const reviewInstructions = `Bạn là trợ lý sư phạm. Tổng hợp kết quả ngắn gọn 100% TIẾNG VIỆT.
+const reviewInstructions = `Bạn là trợ lý sư phạm. Tổng hợp kết quả ngắn gọn 100% TIẾNG VIỆT chuẩn THCS.
 summary: Đúng 1 câu ngắn gọn. studyPlanner: Mỗi mục tối đa 12 từ ngắn gọn.
 Trả duy nhất JSON: {"summary":"","mistakes":[{"steps":["Bước 1: ...","Bước 2: ..."]}],"studyPlanner":{"today":"","tomorrow":"","review":""}}.`;
 
@@ -153,7 +164,7 @@ function extractText(body) {
   return parts.join('');
 }
 
-// BỘ TỰ ĐỘNG VÁ LỖI JSON CHUẨN XÁC — TÁCH BIỆT RÕ RÀNG GIỮA LỆNH TOÁN HỌC VÀ KÝ HIỆU XUỐNG DÒNG
+// BỘ TỰ ĐỘNG VÁ LỖI JSON
 function repairJson(jsonStr) {
   let str = jsonStr.trim();
   let result = '';
@@ -161,7 +172,6 @@ function repairJson(jsonStr) {
   let i = 0;
   const stack = [];
 
-  // Danh sách các lệnh toán học LaTeX bắt đầu bằng b, f, n, r, t (để không nhầm với escape code)
   const isMathCommand = (cmdPrefix) => {
     return /^(?:ne|neq|notin|nabla|natural|nless|nleq|ngtr|ngeq|nmid|nparallel|frac|dfrac|tfrac|forall|flat|fbox|times|theta|tau|tan|text|top|to|therefore|triangle|tilde|right|rho|rangle|rightarrow|Rightarrow|beta|bar|binom|bullet|bmod|mathbf|mathbb|bot)\b/.test(cmdPrefix);
   };
@@ -196,7 +206,6 @@ function repairJson(jsonStr) {
         i++;
       }
     } else {
-      // BÊN TRONG CHUỖI VĂN BẢN
       if (char === '"') {
         const lookahead = str.slice(i + 1, i + 15).trimStart();
         if (lookahead.length === 0 || /^[,}\]:]/.test(lookahead)) {
@@ -216,14 +225,11 @@ function repairJson(jsonStr) {
           result += '\\' + next;
           i += 2;
         } else if (next === 'b' || next === 'f' || next === 'n' || next === 'r' || next === 't') {
-          // Kiểm tra xem phía sau dấu \ có phải là lệnh toán học (như \ne, \frac, \times) hay là dấu xuống dòng thật
           const cmdCandidate = str.slice(i + 1, i + 15);
           if (isMathCommand(cmdCandidate)) {
-            // Đây là lệnh toán học -> escape hai dấu \\ để giữ nguyên chữ cho LaTeX
             result += '\\\\' + next;
             i += 2;
           } else {
-            // Đây là dấu xuống dòng / escape thật (ví dụ \nBước 1) -> giữ nguyên một dấu \ để JSON.parse biến thành xuống dòng thực tế
             result += '\\' + next;
             i += 2;
           }
@@ -324,7 +330,7 @@ export async function analyzeImage(image, transcribed) {
 export async function recheckStep(data) {
   const { problemText, stepError, studentArgument } = data;
   return requestAI([{ role: 'user', content: [
-    { type: 'input_text', text: `${recheckInstructions}\n\nDỮ LIỆU ĐỐI CHIẾU:\n- Đề bài: ${problemText || 'Toán THCS'}\n- Bước học sinh làm: ${stepError.studentWork}\n- Nhận định ban đầu của AI: ${stepError.title} (${stepError.explanation})\n- LẬP LUẬN PHẢN BIỆN CỦA HỌC SINH:\n"${studentArgument || 'Học sinh cho rằng bước này làm đúng.'}"\n\nHãy suy nghĩ khách quan, đánh giá theo bản chất toán học và phân định công tâm, ngắn gọn.` }
+    { type: 'input_text', text: `${recheckInstructions}\n\nDỮ LIỆU ĐỐI CHIẾU:\n- Đề bài: ${problemText || 'Toán THCS'}\n- Bước học sinh làm: ${stepError.studentWork}\n- Nhận định ban đầu của AI: ${stepError.title} (${stepError.explanation})\n- LẬP LUẬN PHẢN BIỆN CỦA HỌC SINH:\n"${studentArgument || 'Học sinh cho rằng bước này làm đúng.'}"\n\nHãy suy nghĩ khách quan, đánh giá theo bản chất toán học THCS và phân định công tâm, ngắn gọn. Tuyệt đối không dùng lim hay kiến thức cấp 3.` }
   ] }]);
 }
 
@@ -338,7 +344,7 @@ export async function generateExercises(data) {
 export async function gradePractice(data) {
   const { question, studentSteps, solution } = data;
   return requestAI([{ role: 'user', content: [
-    { type: 'input_text', text: `${gradePracticeInstructions}\n\nDỮ LIỆU CHẤM BÀI:\n- Đề bài: ${question}\n- Lời giải mẫu chuẩn: ${solution}\n- Bài làm tự luận học sinh gõ vào:\n${studentSteps}\n\nHãy phân tích và nhận xét từng bước biến đổi cực kỳ ngắn gọn.` }
+    { type: 'input_text', text: `${gradePracticeInstructions}\n\nDỮ LIỆU CHẤM BÀI:\n- Đề bài: ${question}\n- Lời giải mẫu chuẩn: ${solution}\n- Bài làm tự luận học sinh gõ vào:\n${studentSteps}\n\nHãy phân tích và nhận xét từng bước biến đổi cực kỳ ngắn gọn theo chuẩn Toán THCS.` }
   ] }]);
 }
 
