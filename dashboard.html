@@ -142,7 +142,6 @@
 
     .level-tag.easier { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
 
-    /* Ô NHẬP LIỆU CHỈNH SỬA VĂN BẢN QUÉT ĐƯỢC */
     .edit-hint {
       background: #eff6ff;
       border: 1px dashed #60a5fa;
@@ -175,6 +174,19 @@
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
     }
 
+    /* ĐỊNH DẠNG XUỐNG DÒNG RÕ RÀNG CHO TOÀN BỘ CÁC KHỐI VĂN BẢN (WHITE-SPACE: PRE-LINE) */
+    .error-card p,
+    .work-compare b,
+    .tip,
+    .model-solution-content,
+    .practice-grade-result,
+    .recheck-feedback,
+    .problem-invalid-banner p,
+    .confirm-box-content {
+      white-space: pre-line !important;
+      line-height: 1.65 !important;
+    }
+
     /* BẢNG CẢNH BÁO ĐỀ BÀI BỊ SAI */
     .problem-invalid-banner {
       background: #fef2f2;
@@ -192,11 +204,6 @@
       align-items: center;
       gap: 8px;
     }
-    .problem-invalid-banner p {
-      margin: 0 0 8px 0;
-      font-size: 14px;
-      line-height: 1.5;
-    }
     .problem-suggestion {
       background: #fff;
       border: 1px dashed #fca5a5;
@@ -204,9 +211,10 @@
       border-radius: 8px;
       font-size: 14px;
       color: #7f1d1d;
+      white-space: pre-line;
     }
 
-    /* KHUNG HƯỚNG DẪN GIẢI MẪU CÓ NÚT BẤM ẨN/HIỆN NỘI DUNG */
+    /* KHUNG HƯỚNG DẪN GIẢI MẪU */
     .model-solution-box {
       background: #f0fdf4;
       border: 1.5px solid #86efac;
@@ -249,8 +257,6 @@
     }
     .model-solution-content {
       font-size: 15px;
-      line-height: 1.7;
-      white-space: pre-wrap;
       color: #1e293b;
       margin-top: 14px;
       padding-top: 14px;
@@ -283,14 +289,13 @@
       padding: 12px 14px;
       border-radius: 10px;
       font-size: 14px;
-      line-height: 1.5;
       margin-top: 6px;
     }
     .practice-grade-result.correct { background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46; }
     .practice-grade-result.partial { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; }
     .practice-grade-result.wrong { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
 
-    /* HỘP PHẢN BIỆN "AI SAI RỒI" CÓ TEXTBOX */
+    /* HỘP PHẢN BIỆN "AI SAI RỒI" */
     .recheck-box {
       margin-top: 14px;
       padding-top: 12px;
@@ -371,7 +376,6 @@
       padding: 12px 14px;
       border-radius: 8px;
       font-size: 14px;
-      line-height: 1.5;
     }
     .recheck-feedback.ai_wrong { background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46; }
     .recheck-feedback.student_wrong { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
@@ -700,10 +704,10 @@
   <script src="auth.js?v=6"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
   <script>window.LEARNING_DEMO_MODE = new URLSearchParams(location.search).has('demo');</script>
-  <script src="domain.js?v=11"></script>
-  <script src="mock-analysis-service.js?v=11"></script>
-  <script src="vision-analysis.js?v=11"></script>
-  <script src="learning-path.js?v=11"></script>
+  <script src="domain.js?v=12"></script>
+  <script src="mock-analysis-service.js?v=12"></script>
+  <script src="vision-analysis.js?v=12"></script>
+  <script src="learning-path.js?v=12"></script>
 
   <script>
     document.querySelectorAll('.history-tab-btn').forEach(btn => {
