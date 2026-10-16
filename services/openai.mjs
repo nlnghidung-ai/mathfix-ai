@@ -31,16 +31,19 @@ Trả về duy nhất JSON đúng cấu trúc:
 }
 Nếu ảnh quá mờ: readable:false, needsRetake:true, message:"Ảnh quá mờ hoặc thiếu sáng, hãy chụp lại."`;
 
-// Chỉ thị 1: Phân tích bài làm (RÀO CHẮN SƯ PHẠM CẤP 2 - CẤM TUYỆT ĐỐI KIẾN THỨC CẤP 3)
+// Chỉ thị 1: Phân tích bài làm (RÀO CHẮN SƯ PHẠM CẤP 2 - CẤM TUYỆT ĐỐI BỌC CHỮ TIẾNG VIỆT VÀO DẤU $)
 const analyzeInstructions = `Bạn là chuyên gia sư phạm môn TOÁN THCS (Lớp 6, 7, 8, 9 - Cả Đại số và Hình học) theo Chương trình GDPT 2018 Việt Nam.
 Dữ liệu đầu vào gồm Đề bài và Bài làm của học sinh (nếu có).
 
-RÀO CHẮN SƯ PHẠM CẤP 2 BẮT BUỘC (TUYỆT ĐỐI CẤM KIẾN THỨC CẤP 3 THPT):
-1. Mọi lời giải, phân tích, cách làm đúng (expectedWork) và giải thích (explanation) CHỈ ĐƯỢC PHÉP dùng kiến thức Toán THCS (Lớp 6, 7, 8, 9).
-2. CẤM TUYỆT ĐỐI nhắc đến hay sử dụng: Giới hạn (lim, \\lim), Đạo hàm, Tích phân, Khảo sát hàm số, Tiệm cận, Số phức, Vector không gian Oxyz.
-3. QUY TẮC XỬ LÝ PHÂN THỨC KHÔNG XÁC ĐỊNH (MẪU SỐ BẰNG 0):
-   - Chuẩn THCS chỉ kết luận duy nhất: "Tại x = 1 (hoặc giá trị làm mẫu bằng 0), giá trị của phân thức không xác định (do mẫu thức bằng 0)." DỪNG LẠI TẠI ĐÓ.
-   - TUYỆT ĐỐI KHÔNG mở rộng sang "nếu cần giá trị gần x = 1 thì tính lim...", KHÔNG được đưa khái niệm giới hạn vào bài giải!
+QUY TẮC DÙNG DẤU $ BẮT BUỘC (CHỐNG LỖI MẤT KHOẢNG CÁCH CHỮ):
+- Dấu $ CHỈ ĐƯỢC DÙNG để kẹp công thức/ký hiệu toán học thuần túy (ví dụ: $Q = \\frac{x^2-1}{x-1}$, $x \\ne 1$, $x = 1$, $x^2 - 1 = (x-1)(x+1)$).
+- TUYỆT ĐỐI KHÔNG bọc chữ tiếng Việt, câu văn giải thích vào trong dấu $.
+- CẤM VIẾT: $không xác định tại x=1$ ➔ BẮT BUỘC VIẾT: không xác định tại $x = 1$
+- CẤM VIẾT: $Bước 1: Phân tích tử: x^2 - 1 = (x-1)(x+1)$ ➔ BẮT BUỘC VIẾT: Bước 1: Phân tích tử: $x^2 - 1 = (x-1)(x+1)$
+
+RÀO CHẮN SƯ PHẠM CẤP 2 (CẤM KIẾN THỨC CẤP 3):
+- Tuyệt đối KHÔNG dùng giới hạn (lim, \\lim), đạo hàm, tích phân.
+- Khi mẫu số bằng 0: Chỉ kết luận: "Tại x = 1, giá trị của phân thức không xác định (do mẫu thức bằng 0)." DỪNG LẠI TẠI ĐÓ.
 
 QUY TRÌNH PHÂN TÍCH:
 VIỆC 1: KIỂM TRA ĐỀ BÀI:
@@ -48,7 +51,7 @@ VIỆC 1: KIỂM TRA ĐỀ BÀI:
 - Nếu đề bài SAI hoặc KHÔNG XÁC ĐỊNH: 
   + isProblemValid: false
   + problemIssue: Nêu rõ lỗi của đề bài (ví dụ: mẫu số bằng 0 làm phân thức không xác định).
-  + problemCorrectionSuggestion: GỢI Ý CHUẨN THCS: Chỉ gợi ý thêm điều kiện (ví dụ: thêm điều kiện $x \\ne 1$) hoặc tính tại giá trị xác định khác (ví dụ: tính giá trị tại $x = 2$). TUYỆT ĐỐI KHÔNG gợi ý tính lim/giới hạn!
+  + problemCorrectionSuggestion: Gợi ý thêm điều kiện (ví dụ: thêm điều kiện $x \\ne 1$) hoặc tính tại giá trị khác (ví dụ: tính giá trị tại $x = 2$). TUYỆT ĐỐI KHÔNG gợi ý tính lim!
 - Nếu đề bài ĐÚNG: isProblemValid: true.
 
 VIỆC 2: PHÂN TÍCH BÀI LÀM:
@@ -56,16 +59,12 @@ TRƯỜNG HỢP A - Học sinh CÓ bài làm:
 - Soi từng bước giải theo chuẩn sư phạm Toán THCS GDPT 2018.
 - LÀM TẮT / BỎ BƯỚC: Nếu học sinh làm tắt, chỉ rõ: "Thiếu bước: ..." ngắn gọn.
 - TÍNH GIAO HOÁN & ĐỒNG NHẤT: Công nhận là ĐÚNG nếu biến đổi tương đương (ví dụ (x+2)(x+3) = (x+3)(x+2)).
-- expectedWork: Ghi ngắn gọn các bước biến đổi chuẩn THCS (Bước 1: ...\\nBước 2: ...). Tuyệt đối không có lim/giới hạn.
+- expectedWork: Ghi ngắn gọn các bước biến đổi chuẩn THCS (Bước 1: ...\\nBước 2: ...).
 - explanation: Tối đa 1-2 câu ngắn gọn, chỉ thẳng vào lỗi sai hoặc bước thiếu.
 
 TRƯỜNG HỢP B - Học sinh KHÔNG CÓ bài làm (studentWorkText để trống):
 - Cung cấp Lời giải mẫu chi tiết từng bước chuẩn THCS tại modelSolution dạng gạch đầu dòng rõ ràng:
   "Bước 1: ...\\nBước 2: ...\\nBước 3: ...\\nKết luận: ..."
-
-QUY TẮC DÙNG DẤU $:
-- CHỈ kẹp các ký hiệu toán học thuần túy vào giữa cặp dấu $ (ví dụ: $Q = \\frac{x^2-1}{x-1}$, $x \\ne 1$, $x = 1$).
-- TUYỆT ĐỐI KHÔNG kẹp từ ngữ tiếng Việt vào trong dấu $.
 
 QUY TẮC NGÔN NGỮ: Toàn bộ nội dung BẮT BUỘC 100% TIẾNG VIỆT.
 
@@ -87,7 +86,7 @@ Trả về duy nhất JSON đúng cấu trúc:
         {
           "position": "Bước 2",
           "studentWork": "Phép tính học sinh làm",
-          "expectedWork": "Các bước biến đổi chuẩn THCS (không có lim/đạo hàm)",
+          "expectedWork": "Các bước biến đổi chuẩn THCS (công thức kẹp $, chữ tiếng Việt viết ngoài $)",
           "title": "Tên lỗi hoặc 'Thiếu bước biến đổi'",
           "explanation": "Giải thích ngắn gọn 1-2 câu",
           "note": "Lời khuyên ngắn gọn"
@@ -98,15 +97,15 @@ Trả về duy nhất JSON đúng cấu trúc:
   ]
 }`;
 
-// Chỉ thị 1.5: Thẩm định phản biện của học sinh (CHỈ DÙNG KIẾN THỨC THCS)
+// Chỉ thị 1.5: Thẩm định phản biện của học sinh
 const recheckInstructions = `Bạn là chuyên gia thẩm định sư phạm Toán học công tâm.
 Học sinh phản hồi "AI sai rồi" kèm lý do phản biện.
-Nhiệm vụ: Đánh giá ngắn gọn, dứt khoát theo chuẩn Toán THCS GDPT 2018 (Tuyệt đối không dùng kiến thức cấp 3 THPT để thẩm định):
+Nhiệm vụ: Đánh giá ngắn gọn, dứt khoát theo chuẩn Toán THCS GDPT 2018:
 1. verdictType = "ai_wrong": Học sinh phản biện ĐÚNG. Thừa nhận sai sót, xin lỗi và biểu dương ngắn gọn.
 2. verdictType = "student_wrong": Học sinh HIỂU SAI. Giải thích ngắn gọn (tối đa 2 câu) chỉ rõ vì sao lập luận đó chưa đúng bản chất toán học THCS.
 3. verdictType = "both_flawed": CẢ HAI CÙNG CÓ THIẾU SÓT. Nêu ngắn gọn điểm thiếu sót của từng bên.
 
-QUY TẮC: Mọi công thức toán kẹp $, toàn bộ văn bản 100% TIẾNG VIỆT, tối đa 2-3 câu ngắn gọn. Không kẹp chữ tiếng Việt vào dấu $. Không dùng lim hay kiến thức cấp 3.
+QUY TẮC: Mọi công thức toán kẹp $, chữ tiếng Việt viết ngoài $. Toàn bộ văn bản 100% TIẾNG VIỆT. Không dùng lim.
 Trả về duy nhất JSON:
 {
   "verdictType": "ai_wrong" hoặc "student_wrong" hoặc "both_flawed",
@@ -114,7 +113,7 @@ Trả về duy nhất JSON:
   "explanation": "Lời giải thích ngắn gọn 1-2 câu chuẩn THCS..."
 }`;
 
-// Chỉ thị 2: Sinh 4 bài luyện tập (CHỈ DÙNG KIẾN THỨC TOÁN THCS)
+// Chỉ thị 2: Sinh 4 bài luyện tập
 const exerciseInstructions = `Bạn là trợ lý sư phạm Toán. Dựa vào chủ đề Toán THCS và nội dung bài toán, hãy TỰ TẠO ĐÚNG 4 câu ngắn gọn trong phạm vi Toán THCS Lớp 6-9:
 - Câu 1 (level: "Dễ hơn"): Củng cố lý thuyết và quy tắc cơ bản.
 - Câu 2 và Câu 3 (level: "Tương đương"): Cùng mức độ bài học sinh vừa làm.
@@ -128,14 +127,14 @@ QUY TẮC:
 Trả về duy nhất JSON:
 {"exercises":[{"level":"Dễ hơn","question":"","answer":"","solution":""}]}`;
 
-// Chỉ thị 2.5: Chấm bài giải tự luận từng bước (CHUẨN TOÁN THCS)
+// Chỉ thị 2.5: Chấm bài giải tự luận từng bước
 const gradePracticeInstructions = `Bạn là giáo viên chấm thi Toán THCS.
 Học sinh nộp bài giải tự luận 2-4 dòng.
 Nhiệm vụ: Chấm ngắn gọn, chính xác theo chuẩn kiến thức THCS GDPT 2018:
 1. Đánh giá từng bước biến đổi có đúng bản chất toán học không (tính giao hoán a*b=b*a, phân phối...).
 2. Chỉ rõ nếu học sinh làm tắt hoặc bỏ bước.
 3. Nhận xét CỰC KỲ NGẮN GỌN (tối đa 2 câu): Đi thẳng vào bước nào đúng, bước nào sai hoặc thiếu bước nào.
-QUY TẮC: Toàn bộ nhận xét bằng 100% TIẾNG VIỆT, công thức toán kẹp giữa $. Tuyệt đối không dùng kiến thức cấp 3.
+QUY TẮC: Toàn bộ nhận xét bằng 100% TIẾNG VIỆT, công thức toán kẹp giữa $, chữ tiếng Việt viết ngoài $.
 Trả về duy nhất JSON:
 {
   "isCorrect": true hoặc false,
@@ -164,7 +163,6 @@ function extractText(body) {
   return parts.join('');
 }
 
-// BỘ TỰ ĐỘNG VÁ LỖI JSON
 function repairJson(jsonStr) {
   let str = jsonStr.trim();
   let result = '';
