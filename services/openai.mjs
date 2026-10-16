@@ -14,8 +14,7 @@ NHIỆM VỤ 2: KIỂM ĐỊNH PHẠM VI (CHỈ CHẤP NHẬN MÔN TOÁN THCS L�
 - ĐƯỢC CHẤP NHẬN (isSupportedScope: true): MÔN TOÁN THCS (Lớp 6, 7, 8, 9) gồm cả ĐẠI SỐ và HÌNH HỌC theo Chương trình GDPT 2018 Việt Nam.
 - TỪ CHỐI NGAY LẬP TỨC (isSupportedScope: false):
   + Các môn học khác: Tiếng Anh, Ngữ văn, Lịch sử, Địa lý, Vật lý, Hóa học, Sinh học, Tin học, GDCD...
-  + Toán ngoài cấp THCS: Toán Cấp 3 THPT (Lớp 10, 11, 12, Đạo hàm, Tích phân, Hình không gian Oxyz, v.v.), Toán Đại học, Toán Tiểu học (Lớp 1-5).
-  + Toán mẹo/đố vui dân gian ngoài chương trình GDPT.
+  + Toán ngoài cấp THCS: Toán Cấp 3 THPT (Lớp 10, 11, 12), Toán Đại học, Toán Tiểu học.
 Nếu ngoài phạm vi, hãy ghi rõ lý do lịch sự tại scopeReason.
 
 QUY TẮC HIỂN THỊ: Viết bằng văn bản gõ phím thông thường (x^2, a/b, căn(x)...). Tuyệt đối không dùng mã LaTeX hay dấu $ ở bước này.
@@ -33,29 +32,31 @@ Trả về duy nhất JSON đúng cấu trúc:
 }
 Nếu ảnh quá mờ: readable:false, needsRetake:true, message:"Ảnh quá mờ hoặc thiếu sáng, hãy chụp lại."`;
 
-// Chỉ thị 1: Phân tích bài làm (Kiểm tra đề + Soi bước giải Toán THCS GDPT 2018)
+// Chỉ thị 1: Phân tích bài làm (CÔ ĐỌNG, SÚC TÍCH, CHỈ TẬP TRUNG CÁC BƯỚC BIẾN ĐỔI)
 const analyzeInstructions = `Bạn là chuyên gia sư phạm môn TOÁN THCS (Lớp 6, 7, 8, 9 - Cả Đại số và Hình học) theo Chương trình GDPT 2018 Việt Nam.
 Dữ liệu đầu vào gồm Đề bài và Bài làm của học sinh (nếu có).
 
+QUY TẮC CỐT LÕI: CÔ ĐỌNG, NGẮN GỌN, SÚC TÍCH. Tuyệt đối KHÔNG viết văn xuôi dài dòng hay giảng giải lý thuyết lê thê. Chỉ tập trung nêu ngắn gọn các bước làm cụ thể.
+
 QUY TRÌNH PHÂN TÍCH:
-VIỆC 1: TĂNG CƯỜNG KIỂM TRA ĐỀ BÀI CHUYÊN SÂU:
-- Tự giải bài toán để kiểm tra xem đề bài có bị sai, mâu thuẫn dữ kiện, thiếu điều kiện xác định, hoặc yêu cầu không phù hợp toán học.
-- Nếu đề bài SAI hoặc KHÔNG PHÙ HỢP: Kết luận dứt khoát isProblemValid: false, nêu rõ nguyên nhân sai tại problemIssue và đưa ra gợi ý sửa lại đề bài chuẩn xác tại problemCorrectionSuggestion.
-- Nếu đề bài ĐÚNG và HỢP LỆ: isProblemValid: true.
+VIỆC 1: KIỂM TRA ĐỀ BÀI:
+- Tự giải bài toán để kiểm tra xem đề bài có bị sai, mâu thuẫn dữ kiện, thiếu điều kiện hoặc vô lý không.
+- Nếu đề bài SAI: isProblemValid: false, problemIssue: "Nêu ngắn gọn lý do đề sai", problemCorrectionSuggestion: "Gợi ý đề sửa đúng".
+- Nếu đề bài ĐÚNG: isProblemValid: true.
 
-VIỆC 2: PHÂN TÍCH TỪNG BƯỚC THEO BẢN CHẤT TOÁN HỌC (TUYỆT ĐỐI KHÔNG SO SÁNH CHUỖI KÝ TỰ):
-- Đánh giá dựa trên TÍNH TƯƠNG ĐƯƠNG VÀ ĐỒNG NHẤT ĐẠI SỐ:
-  + Tính giao hoán: x*y = y*x, (x+1)(x+3) = (x+3)(x+1), 2x+3 = 3+2x là HOÀN TOÀN ĐÚNG.
-  + Tính phân phối: a(b+c) = ab+ac hoặc ngược lại đều hợp lệ.
-  + Thứ tự thực hiện các phép toán độc lập khác nhau đều phải được công nhận là ĐÚNG.
-- Chỉ bắt lỗi khi:
-  + Sai bản chất toán học, sai quy tắc chuyển vế đổi dấu, sai hằng đẳng thức.
-  + Làm tắt hoặc bỏ qua bước biến đổi bắt buộc của chuẩn GDPT 2018.
+VIỆC 2: PHÂN TÍCH BÀI LÀM:
+TRƯỜNG HỢP A - Học sinh CÓ bài làm:
+- Soi từng bước giải theo chuẩn sư phạm Toán THCS GDPT 2018.
+- LÀM TẮT / BỎ BƯỚC: Nếu học sinh làm tắt, chỉ rõ: "Thiếu bước: ..." ngắn gọn.
+- TÍNH GIAO HOÁN & ĐỒNG NHẤT: Công nhận là ĐÚNG nếu biến đổi tương đương (ví dụ (x+2)(x+3) = (x+3)(x+2)).
+- expectedWork: Ghi ngắn gọn các bước biến đổi đúng (Bước 1: ...\\nBước 2: ...).
+- explanation: Tối đa 1-2 câu ngắn gọn, chỉ thẳng vào lỗi sai hoặc bước thiếu.
 
-TRƯỜNG HỢP HỌC SINH KHÔNG CÓ BÀI LÀM (studentWorkText để trống):
-- Cung cấp Lời giải mẫu chi tiết từng bước chuẩn mực tại modelSolution, errors để mảng rỗng [].
+TRƯỜNG HỢP B - Học sinh KHÔNG CÓ bài làm (studentWorkText để trống):
+- Cung cấp Lời giải mẫu chi tiết từng bước chuẩn mực tại modelSolution dạng gạch đầu dòng rõ ràng:
+  "Bước 1: ...\\nBước 2: ...\\nBước 3: ...\\nKết luận: ..." (Không viết đoạn văn xuôi).
 
-QUY TẮC HIỂN THỊ TOÁN HỌC: Mọi công thức toán ở kết quả phân tích kẹp giữa cặp dấu $, ví dụ: $x^2$, $\\frac{a}{b}$, $\\sqrt{x}$, $\\frac{10200}{x-1}$.
+QUY TẮC HIỂN THỊ TOÁN HỌC: Mọi công thức toán ở kết quả phân tích kẹp giữa cặp dấu $, ví dụ: $x^2$, $\\frac{a}{b}$, $\\sqrt{x}$.
 QUY TẮC NGÔN NGỮ: Toàn bộ nội dung BẮT BUỘC 100% TIẾNG VIỆT.
 
 Trả về duy nhất JSON đúng cấu trúc:
@@ -76,66 +77,66 @@ Trả về duy nhất JSON đúng cấu trúc:
         {
           "position": "Bước 2",
           "studentWork": "Phép tính học sinh làm",
-          "expectedWork": "Cách biến đổi đầy đủ, đúng chuẩn",
-          "title": "Tên lỗi hoặc 'Làm tắt/Bỏ bước biến đổi'",
-          "explanation": "Giải thích chi tiết",
-          "note": "Lời khuyên ghi nhớ"
+          "expectedWork": "Các bước biến đổi chuẩn",
+          "title": "Tên lỗi hoặc 'Thiếu bước biến đổi'",
+          "explanation": "Giải thích ngắn gọn 1-2 câu",
+          "note": "Lời khuyên ngắn gọn"
         }
       ],
-      "improvements": ["Lời khuyên tổng thể"]
+      "improvements": ["Lời khuyên ngắn gọn"]
     }
   ]
 }`;
 
-// Chỉ thị 1.5: Thẩm định phản biện của học sinh
+// Chỉ thị 1.5: Thẩm định phản biện của học sinh (NGẮN GỌN, TRỌNG TÂM)
 const recheckInstructions = `Bạn là chuyên gia thẩm định sư phạm Toán học công tâm.
-Học sinh nhấn "AI sai rồi" và GỬI NỘI DUNG PHẢN BIỆN bằng chữ.
-Nhiệm vụ: Căn cứ vào Đề bài, Bước giải của học sinh, Nhận định cũ của AI VÀ NỘI DUNG PHẢN BIỆN CỦA HỌC SINH để đánh giá công tâm theo 3 trường hợp:
-1. verdictType = "ai_wrong": Học sinh phản biện ĐÚNG. Thừa nhận sai sót, xin lỗi và biểu dương tư duy phản biện của học sinh.
-2. verdictType = "student_wrong": Học sinh HIỂU SAI. AI giữ vững nhận định, phân tích chi tiết vì sao lập luận đó chưa chính xác.
-3. verdictType = "both_flawed": CẢ HAI CÙNG CÓ THIẾU SÓT. Phân tích cụ thể thiếu sót của từng bên.
+Học sinh phản hồi "AI sai rồi" kèm lý do phản biện.
+Nhiệm vụ: Đánh giá ngắn gọn, dứt khoát theo 3 trường hợp:
+1. verdictType = "ai_wrong": Học sinh phản biện ĐÚNG. Thừa nhận sai sót, xin lỗi và biểu dương ngắn gọn.
+2. verdictType = "student_wrong": Học sinh HIỂU SAI. Giải thích ngắn gọn (tối đa 2 câu) chỉ rõ vì sao lập luận đó chưa đúng bản chất toán học.
+3. verdictType = "both_flawed": CẢ HAI CÙNG CÓ THIẾU SÓT. Nêu ngắn gọn điểm thiếu sót của từng bên.
 
-QUY TẮC: Mọi công thức toán kẹp $, toàn bộ văn bản 100% TIẾNG VIỆT.
+QUY TẮC: Mọi công thức toán kẹp $, toàn bộ văn bản 100% TIẾNG VIỆT, tối đa 2-3 câu ngắn gọn.
 Trả về duy nhất JSON:
 {
   "verdictType": "ai_wrong" hoặc "student_wrong" hoặc "both_flawed",
-  "verdictTitle": "AI nhận định nhầm - Học sinh làm đúng" hoặc "AI giữ nhận định - Học sinh hiểu chưa đúng" hoặc "Cả hai bên cùng có điểm thiếu sót",
-  "explanation": "Lời giải thích thấu đáo, công tâm..."
+  "verdictTitle": "AI nhận định nhầm - Bạn làm đúng" hoặc "AI giữ nhận định - Bước này chưa đúng" hoặc "Cả hai bên cùng có điểm thiếu sót",
+  "explanation": "Lời giải thích ngắn gọn 1-2 câu..."
 }`;
 
 // Chỉ thị 2: Sinh 4 bài luyện tập
-const exerciseInstructions = `Bạn là trợ lý sư phạm Toán. Dựa vào chủ đề Toán THCS và nội dung bài toán, hãy TỰ TẠO ĐÚNG 4 câu:
+const exerciseInstructions = `Bạn là trợ lý sư phạm Toán. Dựa vào chủ đề Toán THCS và nội dung bài toán, hãy TỰ TẠO ĐÚNG 4 câu ngắn gọn:
 - Câu 1 (level: "Dễ hơn"): Củng cố lý thuyết và quy tắc cơ bản.
 - Câu 2 và Câu 3 (level: "Tương đương"): Cùng mức độ bài học sinh vừa làm.
 - Câu 4 (level: "Nâng cao"): Vận dụng nâng cao.
 QUY TẮC:
 - Mọi công thức toán trong question và solution kẹp giữa cặp dấu $.
 - question: chỉ chứa đề bài, KHÔNG ghi tiền tố 'Câu 1:' hay 'Bài 1:'.
-- solution: gợi ý các bước giải chuẩn mực 2-4 dòng để đối chiếu.
+- solution: chỉ ghi các bước biến đổi chính (Bước 1: ...\\nBước 2: ...) và đáp số, không giải thích dài dòng.
 - answer: đáp số rút gọn cuối cùng.
 - level: nhận đúng 1 trong 3 giá trị: "Dễ hơn", "Tương đương", "Nâng cao".
 Trả về duy nhất JSON:
 {"exercises":[{"level":"Dễ hơn","question":"","answer":"","solution":""}]}`;
 
-// Chỉ thị 2.5: Chấm bài giải tự luận từng bước của học sinh
-const gradePracticeInstructions = `Bạn là giáo viên chấm bài thi Toán THCS.
-Học sinh nộp các bước giải tự luận (gõ bằng bàn phím thông thường, không dùng mã LaTeX, có thể viết liền hoặc xuống dòng).
-Nhiệm vụ: Đọc và chấm toàn bộ các bước biến đổi của học sinh:
-1. Đánh giá từng bước biến đổi theo bản chất toán học (tính giao hoán a*b=b*a, a+b=b+a, tính phân phối...).
-2. Kiểm tra xem học sinh có làm tắt/nhảy cóc bước cốt lõi không.
-3. Kiểm tra đáp số cuối cùng.
-QUY TẮC: Toàn bộ nhận xét bằng 100% TIẾNG VIỆT, công thức toán trong nhận xét kẹp giữa $.
+// Chỉ thị 2.5: Chấm bài giải tự luận từng bước (CÔ ĐỌNG, ĐI THẲNG VÀO CÁC BƯỚC)
+const gradePracticeInstructions = `Bạn là giáo viên chấm thi Toán THCS.
+Học sinh nộp bài giải tự luận 2-4 dòng.
+Nhiệm vụ: Chấm ngắn gọn, chính xác:
+1. Đánh giá từng bước biến đổi có đúng bản chất toán học không (tính giao hoán a*b=b*a, phân phối...).
+2. Chỉ rõ nếu học sinh làm tắt hoặc bỏ bước.
+3. Nhận xét CỰC KỲ NGẮN GỌN (tối đa 2 câu): Đi thẳng vào bước nào đúng, bước nào sai hoặc thiếu bước nào.
+QUY TẮC: Toàn bộ nhận xét bằng 100% TIẾNG VIỆT, công thức toán kẹp giữa $.
 Trả về duy nhất JSON:
 {
   "isCorrect": true hoặc false,
   "score": "Điểm từ 0 đến 10",
-  "verdict": "Làm đúng và đủ bước" hoặc "Đáp số đúng nhưng làm tắt" hoặc "Chưa chính xác ở bước biến đổi",
-  "feedback": "Nhận xét chi tiết từng bước học sinh đã làm..."
+  "verdict": "Đúng và đủ bước" hoặc "Đúng nhưng làm tắt" hoặc "Sai ở bước biến đổi",
+  "feedback": "Nhận xét ngắn gọn 1-2 câu chỉ thẳng vào các bước..."
 }`;
 
 // Chỉ thị 3: Nhận xét sau bài luyện tập
-const reviewInstructions = `Bạn là trợ lý sư phạm. Dựa trên toàn bộ kết quả nộp bài luyện tập, tổng hợp nhận xét 100% BẰNG TIẾNG VIỆT.
-summary tối đa 2 câu. Tạo studyPlanner: today, tomorrow, review; mỗi mục tối đa 22 từ.
+const reviewInstructions = `Bạn là trợ lý sư phạm. Tổng hợp kết quả ngắn gọn 100% TIẾNG VIỆT.
+summary: Đúng 1 câu ngắn gọn. studyPlanner: Mỗi mục tối đa 12 từ ngắn gọn.
 Trả duy nhất JSON: {"summary":"","mistakes":[{"steps":["Bước 1: ...","Bước 2: ..."]}],"studyPlanner":{"today":"","tomorrow":"","review":""}}.`;
 
 function extractText(body) {
@@ -153,7 +154,6 @@ function extractText(body) {
   return parts.join('');
 }
 
-// BỘ TỰ ĐỘNG VÁ LỖI JSON CHUẨN XÁC — TUYỆT ĐỐI KHÔNG CHÈN DẤU PHẨY VÀO PHÂN SỐ LATEX \frac{a}{b}
 function repairJson(jsonStr) {
   let str = jsonStr.trim();
   let result = '';
@@ -179,7 +179,6 @@ function repairJson(jsonStr) {
         result += char;
         i++;
 
-        // CHỈ CHÈN DẤU PHẨY KHI Ở NGOÀI CHUỖI JSON (giữa 2 object hoặc 2 mảng)
         const rest = str.slice(i).trimStart();
         if (rest.startsWith('{') || rest.startsWith('[')) {
           const nextNonSpace = str.slice(i).search(/\S/);
@@ -192,7 +191,6 @@ function repairJson(jsonStr) {
         i++;
       }
     } else {
-      // BÊN TRONG CHUỖI VĂN BẢN: GIỮ NGUYÊN VẸN 100% CẤU TRÚC PHÂN SỐ \frac{tử}{mẫu}
       if (char === '"') {
         const lookahead = str.slice(i + 1, i + 15).trimStart();
         if (lookahead.length === 0 || /^[,}\]:]/.test(lookahead)) {
@@ -320,7 +318,7 @@ export async function analyzeImage(image, transcribed) {
 export async function recheckStep(data) {
   const { problemText, stepError, studentArgument } = data;
   return requestAI([{ role: 'user', content: [
-    { type: 'input_text', text: `${recheckInstructions}\n\nDỮ LIỆU ĐỐI CHIẾU:\n- Đề bài: ${problemText || 'Toán THCS'}\n- Bước học sinh làm: ${stepError.studentWork}\n- Nhận định ban đầu của AI: ${stepError.title} (${stepError.explanation})\n- LẬP LUẬN PHẢN BIỆN CỦA HỌC SINH:\n"${studentArgument || 'Học sinh cho rằng bước này làm đúng.'}"\n\nHãy suy nghĩ khách quan, đánh giá theo bản chất toán học và phân định công tâm.` }
+    { type: 'input_text', text: `${recheckInstructions}\n\nDỮ LIỆU ĐỐI CHIẾU:\n- Đề bài: ${problemText || 'Toán THCS'}\n- Bước học sinh làm: ${stepError.studentWork}\n- Nhận định ban đầu của AI: ${stepError.title} (${stepError.explanation})\n- LẬP LUẬN PHẢN BIỆN CỦA HỌC SINH:\n"${studentArgument || 'Học sinh cho rằng bước này làm đúng.'}"\n\nHãy suy nghĩ khách quan, đánh giá theo bản chất toán học và phân định công tâm, ngắn gọn.` }
   ] }]);
 }
 
@@ -336,7 +334,7 @@ export async function generateExercises(data) {
 export async function gradePractice(data) {
   const { question, studentSteps, solution } = data;
   return requestAI([{ role: 'user', content: [
-    { type: 'input_text', text: `${gradePracticeInstructions}\n\nDỮ LIỆU CHẤM BÀI:\n- Đề bài: ${question}\n- Lời giải mẫu chuẩn: ${solution}\n- Bài làm tự luận học sinh gõ vào:\n${studentSteps}\n\nHãy phân tích và nhận xét từng bước biến đổi.` }
+    { type: 'input_text', text: `${gradePracticeInstructions}\n\nDỮ LIỆU CHẤM BÀI:\n- Đề bài: ${question}\n- Lời giải mẫu chuẩn: ${solution}\n- Bài làm tự luận học sinh gõ vào:\n${studentSteps}\n\nHãy phân tích và nhận xét từng bước biến đổi cực kỳ ngắn gọn.` }
   ] }]);
 }
 
