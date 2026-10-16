@@ -5,28 +5,48 @@ let currentTranscribed=null;
 // HÀM CHUYỂN ĐỔI SANG VĂN BẢN GÕ PHÍM THÔNG THƯỜNG (DÀNH CHO Ô NHẬP LIỆU CHỈNH SỬA)
 function toPlainText(str) {
   if (!str) return '';
-  return String(str)
-    .replace(/\\n/g, '\n') // Chuyển chuỗi \n thành dấu xuống dòng thực tế
-    .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1/$2)')
-    .replace(/\\sqrt\[(\d+)\]\{([^}]+)\}/g, 'căn bậc $1($2)')
-    .replace(/\\sqrt\{([^}]+)\}/g, 'căn($1)')
-    .replace(/\\times/g, '*')
-    .replace(/\\div/g, ':')
-    .replace(/\\pm/g, '±')
-    .replace(/\\cdot/g, '*')
-    .replace(/\^\{([^}]+)\}/g, '^$1')
-    .replace(/_\{([^}]+)\}/g, '_$1')
-    .replace(/\$/g, '')
-    .replace(/\\/g, '')
-    .trim();
+  let s = String(str);
+
+  s = s.replace(/\$([^\$]+)\$/g, (_, math) => {
+    return math
+      .replace(/\\(?:neq|ne)\b/g, ' ≠ ')
+      .replace(/\\le(?:q)?\b/g, ' ≤ ')
+      .replace(/\\ge(?:q)?\b/g, ' ≥ ')
+      .replace(/\\approx\b/g, ' ≈ ')
+      .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1/$2)')
+      .replace(/\\sqrt\[(\d+)\]\{([^}]+)\}/g, 'căn bậc $1($2)')
+      .replace(/\\sqrt\{([^}]+)\}/g, 'căn($1)')
+      .replace(/\\times/g, '*')
+      .replace(/\\div/g, ':')
+      .replace(/\\pm/g, '±')
+      .replace(/\\cdot/g, '*')
+      .replace(/\^\{([^}]+)\}/g, '^$1')
+      .replace(/_\{([^}]+)\}/g, '_$1')
+      .replace(/\\/g, '');
+  });
+
+  s = s.replace(/\\n/g, '\n');
+  return s.trim();
 }
 
-// HÀM ĐẢM BẢO XUỐNG DÒNG ĐÚNG CHO CÁC ĐOẠN TEXT PHÂN TÍCH (XÓA CHỮ \n THÔ)
-function cleanBreakLines(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/\\n/g, '\n')
-    .trim();
+// HÀM TÁCH BẠCH TUYỆT ĐỐI GIỮA VĂN BẢN XUỐNG DÒNG VÀ CÔNG THỨC TOÁN HỌC
+function cleanBreakLines(rawStr) {
+  if (!rawStr) return '';
+  let str = String(rawStr);
+
+  const parts = str.split(/(\$\$[\s\S]*?\$\$|\$[^\$]*?\$)/g);
+
+  for (let i = 0; i < parts.length; i++) {
+    const isMath = parts[i].startsWith('$') && parts[i].endsWith('$');
+    if (isMath) {
+      // Công thức toán học: Giữ nguyên vẹn 100%
+    } else {
+      // Văn bản thường bên ngoài: Xuống dòng an toàn
+      parts[i] = parts[i].replace(/\\n/g, '\n');
+    }
+  }
+
+  return parts.join('').trim();
 }
 
 // BỘ VẼ CÔNG THỨC TOÁN HỌC CHUẨN XÁC
@@ -41,7 +61,7 @@ function renderMath(target){
           const parent = walker.currentNode.parentNode;
           if (parent && !['SCRIPT', 'STYLE', 'TEXTAREA', 'INPUT', 'PRE', 'CODE'].includes(parent.tagName) && !parent.closest('.katex')) {
             const val = walker.currentNode.nodeValue;
-            if (val && (/\$([^$]+)\$/.test(val) || /\\(frac|dfrac|tfrac|sqrt|times|div|pm)/.test(val) || /\b[a-zA-Z0-9]\^\{?[0-9a-zA-Z+-]+\}?/.test(val))) {
+            if (val && (/\$([^$]+)\$/.test(val) || /\\(frac|dfrac|tfrac|sqrt|times|div|pm|ne|neq)/.test(val) || /\b[a-zA-Z0-9]\^\{?[0-9a-zA-Z+-]+\}?/.test(val))) {
               textNodes.push(walker.currentNode);
             }
           }
@@ -333,7 +353,7 @@ function showResult(result){
     invalidBanner.classList.add('hidden');
   }
 
-  // 2. HƯỚNG DẪN GIẢI MẪU: ĐÃ XỬ LÝ XUỐNG DÒNG RÕ RÀNG
+  // 2. HƯỚNG DẪN GIẢI MẪU: ẨN MẶC ĐỊNH
   const modelBox = $('#modelSolutionBox');
   const modelContent = $('#modelSolutionContent');
   const toggleBtn = $('#toggleSolutionBtn');
@@ -378,7 +398,7 @@ function showAnalysis(index){
   $('#problemNavigator').innerHTML=sets.length>1?`<div class="problem-nav"><span class="problem-nav-label">Ảnh có ${sets.length} bài cần xem lại. Chọn một bài:</span>${sets.map((item,itemIndex)=>`<button class="problem-tab ${itemIndex===index?'active':''}" data-analysis="${itemIndex}">${item.title||`Bài ${itemIndex+1}`}</button>`).join('')}</div>`:'';
   $$('.problem-tab').forEach(button=>button.onclick=()=>showAnalysis(Number(button.dataset.analysis)));
   
-  // HIỂN THỊ CÁC THẺ LỖI SAI (ĐÃ LÀM SẠCH KÝ HIỆU XUỐNG DÒNG \n)
+  // HIỂN THỊ CÁC THẺ LỖI SAI
   if (r.learningErrors && r.learningErrors.length > 0) {
     $('#errorList').innerHTML=r.learningErrors.map((e, errIdx)=>`
       <article class="error-card" id="error-card-${errIdx}">
@@ -490,12 +510,29 @@ function bindRecheckEvents(){
   });
 }
 
+// BƯỚC VẼ LỘ TRÌNH (TÍCH HỢP XEM BÀI GIẢNG YOUTUBE & LUYỆN TẬP LUÔN)
 function renderPath(r){
+  const topicName = r.knowledgePoint?.name || r.topic || 'Toán THCS';
+  const videoUrl = r.learningResources?.[0]?.url || `https://www.youtube.com/results?search_query=${encodeURIComponent(topicName + ' toán THCS')}`;
+
   $('#pathSteps').innerHTML=r.learningPath.map((s,i)=>`<article class="path-step ${i?'':'active'}" data-step="${s.step}">
     <p class="step-tag">BƯỚC ${s.step}</p>
     <h3>${s.title}</h3>
     <p>${cleanBreakLines(s.goal)}</p>
-    ${i===0?`<button class="btn next-step" type="button">Đã học lý thuyết → Bắt đầu luyện tập</button>`:''}
+    ${i===0?`
+      <div class="theory-actions">
+        <!-- Nút mở video bài giảng YouTube -->
+        <a class="resource-video-btn" target="_blank" rel="noopener" href="${videoUrl}">
+          <span class="yt-icon">▶</span>
+          <div class="yt-info">
+            <b>Xem bài giảng YouTube về chuyên đề này</b>
+            <small>Chủ đề: ${topicName}</small>
+          </div>
+        </a>
+        <!-- Nút Luyện tập luôn không cần xem video -->
+        <button class="btn next-step" type="button">Luyện tập luôn (4 bài) →</button>
+      </div>
+    `:''}
     ${i===1?`<div id="practiceBox">${r.generatedExercises?.length ? practiceMarkup(r.generatedExercises) : '<div class="ai-created">⏳ Đang tạo 4 bài luyện tập thích ứng từ lỗi của bạn...</div>'}</div>`:''}
     ${i===2?`<div id="practiceSummary" class="summary-card">Hoàn thành các bài luyện tự luận để nhận xét kết quả.</div><button class="btn restart" type="button">Tạo phân tích mới</button>`:''}
   </article>`).join('');
@@ -645,7 +682,7 @@ function renderReview(summary,feedback,total){
   }).join('');
   const fallback={today:wrong.length?`Làm lại ${wrong.length} câu sai, ghi rõ từng phép tính.`:'Làm thêm câu cùng dạng để duy trì kết quả tốt.',tomorrow:`Xem trước kiến thức ${currentAnalysis.knowledgePoint.name}.`,review:'Ôn lại các bước tính đã sai trước khi làm bài mới.'};
   const planner={...fallback,...(feedback.studyPlanner||{})};
-  summary.innerHTML=`<b>Kết quả luyện tập: ${correctCount}/${total} bài đạt điểm tuyệt đối</b><p>${cleanBreakLines(escapeHtml(feedback.summary))}</p>${errors?`<div class="review-mistakes">${errors}</div>`:''}<section class="study-planner"><p class="planner-kicker">STUDY PLANNER</p><h4>Kế hoạch ôn tập của bạn</h4><div><b>📝 BTVN hôm nay</b><span>${cleanBreakLines(escapeHtml(planner.today))}</span></div><div><b>📖 Xem trước ngày mai</b><span>${cleanBreakLines(escapeHtml(planner.tomorrow))}</span></div><div><b>💡 Ôn bài cũ + lỗi còn hổng</b><span>${cleanBreakLines(escapeHtml(planner.review))}</span></div></section>`;
+  summary.innerHTML=`<b>Kết quả luyện tập: ${correctCount}/${total} bài đạt điểm tuyệt đối</b><p>${cleanBreakLines(escapeHtml(feedback.summary))}</p>${errors?`<div class="review-mistakes">${errors}</div>`:''}<section class="study-planner"><p class="planner-kicker">STUDY PLANNER</p><h4>Kế hoạch ôn tập của bạn</h4><div><b>📝 BTVN hôm nay</b><span>${cleanBreakLines(escapeHtml(planner.today))}</span></div><div><b>📖 Xem trước ngày mai</b><span>${cleanBreakLines(escapeHtml(planner.tomorrow)}</span></div><div><b>💡 Ôn bài cũ + lỗi còn hổng</b><span>${cleanBreakLines(escapeHtml(planner.review))}</span></div></section>`;
   renderMath(summary);
 }
 
